@@ -39,14 +39,16 @@ import com.example.noteproject.ui.theme.NoteProjectTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
+
             NoteProjectTheme {
+
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
 
                 Box() {
-
 
                     Column(
                         verticalArrangement = Arrangement.Center,
@@ -92,7 +94,10 @@ class MainActivity : ComponentActivity() {
                                             Box(
                                                 modifier = Modifier
                                                     .size(height = 170.dp, width = 120.dp)
-                                                    .shadow(0.3f.dp, shape = RoundedCornerShape(1.dp))
+                                                    .shadow(
+                                                        0.3f.dp,
+                                                        shape = RoundedCornerShape(1.dp)
+                                                    )
                                                     .padding(10.dp)
 
                                             ) {
