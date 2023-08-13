@@ -1,6 +1,5 @@
 package com.example.noteproject
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,37 +11,28 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
-import kotlinx.coroutines.CoroutineScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +42,6 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
-                val scope = rememberCoroutineScope()
 
                 Column(
                     verticalArrangement = Arrangement.Center,
@@ -71,9 +60,14 @@ class MainActivity : ComponentActivity() {
                                     .padding(7.dp)
                                     .border(1.dp, Color.Black, shape = RoundedCornerShape(8.dp))
                                     .padding(16.dp)
+                                    .clickable {
+                                        val intent = Intent(context, ShowTextPage::class.java)
+                                        intent.putExtra("Uid", note.uid)
+                                        context.startActivity(intent)
+                                    }
                             ) {
                                 Column() {
-                                    UserItem(note, db, scope, context)
+                                    UserItem(note)
                                 }
                             }
                         }
@@ -88,7 +82,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Button(
                             onClick = {
-                                val intent = Intent(context, EdittiingPage::class.java)
+                                val intent = Intent(context, NewNotePage::class.java)
                                 context.startActivity(intent)
                             },
                         ) {
@@ -102,95 +96,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun UserItem(note: Note, db: NoteAppDatabase, scope: CoroutineScope, context: Context) {
+private fun UserItem(note: Note) {
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                val intent = Intent(context, EdittiingPage::class.java)
-                context.startActivity(intent)
-            },
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "${note.title}", fontWeight = FontWeight.Bold)
+        Text(text = note.title!!, fontWeight = FontWeight.Bold)
 
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    NoteProjectTheme {
-        val context = LocalContext.current
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Spacer(modifier = Modifier.size(50.dp))
-            Text(text = "모든 노트", fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            Text(text = "노트 30개", fontWeight = FontWeight.Light, fontSize = 10.sp)
-            Spacer(modifier = Modifier.size(50.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(bottom = 16.dp, end = 16.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Button(
-                    onClick = {
-                        val intent = Intent(context, EdittiingPage::class.java)
-                        context.startActivity(intent)
-                    },
-                ) {
-                    Text("📝")
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-//@Preview(showBackground = true)
-@Composable
-fun ScrollableScreenWithoutScaffold() {
-    var textFieldValue by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            repeat(50) {
-                // Placeholder items for demonstration
-                Text("Item $it")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Fixed button positioned above the bottom-right corner
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(bottom = 16.dp, end = 16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            Button(
-                onClick = { /* Handle button click */ }
-            ) {
-                Text("Fixed Button")
-            }
-        }
     }
 }

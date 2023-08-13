@@ -13,7 +13,13 @@
         android:theme="@style/Theme.NoteProject"
         tools:targetApi="31">
         <activity
-            android:name=".EdittiingPage"
+            android:name=".ShowTextPage"
+            android:exported="false" />
+        <activity
+            android:name=".EdittingPage"
+            android:exported="false" />
+        <activity
+            android:name=".NewNotePage"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
