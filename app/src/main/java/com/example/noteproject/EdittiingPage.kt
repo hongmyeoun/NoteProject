@@ -1,5 +1,6 @@
 package com.example.noteproject
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,14 +13,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.noteproject.data.Note
+import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class EdittiingPage : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -27,30 +35,39 @@ class EdittiingPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             NoteProjectTheme {
+                val context = LocalContext.current
+                val db = remember { NoteAppDatabase.getDatabase(context) }
+                val userList by db.noteDao().getAll().collectAsState(initial = emptyList())
+                val scope = rememberCoroutineScope()
+
                 var noteTitle by remember { mutableStateOf("제목") }
                 var noteText by remember { mutableStateOf("") }
-                NoteProjectTheme {
-                    Column {
-                        Row {
-                            Button(onClick = { /*TODO*/ }) {
-                                Text(text = "<")
-                            }
-                            TextField(
-                                value = noteTitle,
-                                onValueChange = { noteTitle = it },
-                                colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-                            )
-                            Button(onClick = { /*TODO*/ }) {
-                                Text(text = "💾")
-                            }
+                Column {
+                    Row {
+                        Button(onClick = {
+                            val intent = Intent(context, MainActivity::class.java)
+                            context.startActivity(intent)
+                        }) {
+                            Text(text = "<")
                         }
                         TextField(
-                            value = noteText,
-                            onValueChange = { noteText = it },
-                            modifier = Modifier.fillMaxSize(),
+                            value = noteTitle,
+                            onValueChange = { noteTitle = it },
                             colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
                         )
+                        Button(onClick = {
+                            val newNote = Note(title = noteTitle, script = noteText)
+                            scope.launch(Dispatchers.IO) { db.noteDao().insertAll(newNote) }
+                        }) {
+                            Text(text = "💾")
+                        }
                     }
+                    TextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        modifier = Modifier.fillMaxSize(),
+                        colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
+                    )
                 }
             }
         }
