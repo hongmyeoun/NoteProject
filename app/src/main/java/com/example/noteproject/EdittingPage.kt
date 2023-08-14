@@ -1,9 +1,13 @@
 package com.example.noteproject
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,13 +17,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
@@ -51,7 +54,13 @@ class EdittingPage : ComponentActivity() {
                 val title = intent.getStringExtra("title") ?: "제목"
                 val script = intent.getStringExtra("script") ?: ""
                 val scope = rememberCoroutineScope()
-
+                var selectUri by remember { mutableStateOf<Uri?>(null) }
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.PickVisualMedia(),
+                    onResult = { uri ->
+                        selectUri = uri
+                    }
+                )
                 val foundNote2 = noteList.find { it.uid == targetUid }
 
                 var editNoteTitle by remember { mutableStateOf(title) }
@@ -82,6 +91,12 @@ class EdittingPage : ComponentActivity() {
                             modifier = Modifier.weight(1f),
                             maxLines = 1
                         )
+                        Icon(imageVector = Icons.Default.Favorite,
+                            contentDescription = "",
+                            modifier = Modifier.clickable {
+                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }
+                        )
                         Box(
                             modifier = Modifier
                                 .padding(10.dp)
@@ -90,6 +105,7 @@ class EdittingPage : ComponentActivity() {
                                     scope.launch(Dispatchers.IO) {
                                         foundNote2?.title = editNoteTitle
                                         foundNote2?.script = editNoteText
+                                        foundNote2?.imageUri = selectUri?.toString()
                                         if (foundNote2 != null) {
                                             db
                                                 .noteDao()
@@ -117,45 +133,47 @@ class EdittingPage : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
-@Composable
-fun SHowPre() {
-    NoteProjectTheme {
 
-        var editNoteTitle by remember { mutableStateOf("제목") }
-        var editNoteText by remember { mutableStateOf("내용") }
 
-        Column {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                ) {
-                    Text(text = "◁", color = Color.Black)
-                }
-                TextField(
-                    value = editNoteTitle,
-                    onValueChange = { editNoteTitle = it },
-                    colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-                )
-                Button(
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                ) {
-                    Text(text = "💾")
-                }
-            }
-            TextField(
-                value = editNoteText,
-                onValueChange = { editNoteText = it },
-                modifier = Modifier.fillMaxSize(),
-                colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-            )
-        }
-    }
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Preview(showBackground = true)
+//@Composable
+//fun SHowPre() {
+//    NoteProjectTheme {
+//
+//        var editNoteTitle by remember { mutableStateOf("제목") }
+//        var editNoteText by remember { mutableStateOf("내용") }
+//
+//        Column {
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                modifier = Modifier.fillMaxWidth()
+//            ) {
+//                Button(
+//                    onClick = { },
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+//                ) {
+//                    Text(text = "◁", color = Color.Black)
+//                }
+//                TextField(
+//                    value = editNoteTitle,
+//                    onValueChange = { editNoteTitle = it },
+//                    colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
+//                )
+//                Button(
+//                    onClick = { },
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+//                ) {
+//                    Text(text = "💾")
+//                }
+//            }
+//            TextField(
+//                value = editNoteText,
+//                onValueChange = { editNoteText = it },
+//                modifier = Modifier.fillMaxSize(),
+//                colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
+//            )
+//        }
+//    }
+//}

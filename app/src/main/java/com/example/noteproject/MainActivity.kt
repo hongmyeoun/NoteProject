@@ -52,6 +52,7 @@ import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+
 class MainActivity : ComponentActivity() {
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
@@ -65,13 +66,13 @@ class MainActivity : ComponentActivity() {
         windowInsetsController.hide(systemBars())
 
         setContent {
-
             NoteProjectTheme {
 
                 val context = LocalContext.current
+
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
-                var deletPressed by remember { mutableStateOf(false)}
+                var deletPressed by remember { mutableStateOf(false) }
                 var deletingNote by remember { mutableStateOf<Note?>(null) }
 
                 val scope = rememberCoroutineScope()
@@ -135,11 +136,13 @@ class MainActivity : ComponentActivity() {
                                                     DeleteAlet(
                                                         onDismiss = {
                                                             deletPressed = false
-                                                            deletingNote = null // 삭제 모드가 해제되면 노트도 초기화
+                                                            deletingNote =
+                                                                null // 삭제 모드가 해제되면 노트도 초기화
                                                         },
                                                         onDelete = {
                                                             scope.launch(Dispatchers.IO) {
-                                                                db.noteDao().delete(note) // 선택한 노트를 삭제
+                                                                db.noteDao()
+                                                                    .delete(note) // 선택한 노트를 삭제
                                                             }
                                                             deletPressed = false // 삭제 완료 후 삭제 모드 해제
                                                             deletingNote = null // 삭제 완료 후 노트 초기화

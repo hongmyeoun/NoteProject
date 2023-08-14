@@ -9,5 +9,6 @@ data class Note(
     @PrimaryKey(autoGenerate = true) var uid: Int = 0,
     @ColumnInfo(name = "title") var title: String?,
     @ColumnInfo(name = "script") var script: String?,
-    @ColumnInfo(name = "created_date") var createdDate: String?
+    @ColumnInfo(name = "created_date") var createdDate: String?,
+    @ColumnInfo(name = "image_uri") var imageUri: String?
 )
