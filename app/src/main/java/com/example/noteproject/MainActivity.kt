@@ -8,7 +8,7 @@ import android.view.WindowInsets.Type.systemBars
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,16 +22,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,16 +48,21 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(systemBars())
+
         setContent {
 
             NoteProjectTheme {
@@ -58,6 +70,9 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
+                var deletPressed by remember { mutableStateOf(false)}
+                val scope = rememberCoroutineScope()
+
                 Box() {
 
                     Column(
@@ -90,14 +105,33 @@ class MainActivity : ComponentActivity() {
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     for (note in chunkedNoteList[rowIndex]) {
+                                        if (deletPressed) {
+                                            DeleteAlet(
+                                                onDismiss = {
+                                                    deletPressed = false
+                                                },
+                                                onDelete = {
+                                                    scope.launch(Dispatchers.IO) { db.noteDao().delete(note) }
+                                                }
+                                            )
+                                        }
                                         Column(
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .clickable {
-                                                    val intent =
-                                                        Intent(context, ShowTextPage::class.java)
-                                                    intent.putExtra("Uid", note.uid)
-                                                    context.startActivity(intent)
+                                                .pointerInput(Unit) {
+                                                    detectTapGestures(
+                                                        onTap = {
+                                                            val intent = Intent(
+                                                                context,
+                                                                ShowTextPage::class.java
+                                                            )
+                                                            intent.putExtra("Uid", note.uid)
+                                                            context.startActivity(intent)
+                                                        },
+                                                        onLongPress = {
+                                                            deletPressed = true
+                                                        }
+                                                    )
                                                 },
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
@@ -160,14 +194,31 @@ class MainActivity : ComponentActivity() {
 }
 
 
-//@Composable
-//private fun UserItem(note: Note) {
-//
-//    Row(
-//        modifier = Modifier.fillMaxWidth(),
-//        horizontalArrangement = Arrangement.SpaceBetween,
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        Text(text = note.script!!, fontWeight = FontWeight.Bold)
-//    }
-//}
+@Composable
+fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "삭제하시겠습니까?")
+        },
+        text = {
+            Text(text = "진짜진짜 삭제됩니다ㅠㅠ 하실껀가요??")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDelete()
+                    onDismiss()
+                }
+            ) {
+                Text(text = "진행시켜!")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "취소")
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
+}

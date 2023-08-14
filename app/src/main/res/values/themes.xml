@@ -5,7 +5,6 @@
 <!--        <item name="android:windowLightStatusBar">true</item> &lt;!&ndash; 하얀색 상태바 &ndash;&gt;-->
         <item name="android:windowFullscreen">true</item> <!-- 전체 화면 모드 활성화 -->
         <item name="android:windowContentOverlay">@null</item> <!-- 컨텐츠 오버레이 제거 -->
-
     </style>
 
 </resources>

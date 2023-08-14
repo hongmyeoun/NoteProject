@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.NoteAppDatabase
@@ -117,53 +115,53 @@ class ShowTextPage : ComponentActivity() {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun Preee() {
-    NoteProjectTheme {
-        Column {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(10.dp)// ◁ 버튼 크기 지정
-                        .size(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "◁", color = Color.Black)
-                }
-                Text(
-                    text = "제목근데김근데김근데김근데김근데김",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 25.sp,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, // 제목이 길어질 경우 ...로 처리
-                )
-                Box(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(height = 30.dp, width = 40.dp) // 편집 버튼 크기 지정
-                        .border(1.dp, shape = RoundedCornerShape(5.dp), color = Color.Black),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "편집", color = Color.Black)
-                }
-            }
-            Divider()
-            LazyColumn() {
-                item {
-                    Text(
-                        text = "내용이없음", modifier = Modifier
-                            .fillMaxSize()
-                            .padding(15.dp)
-                    )
-
-                }
-            }
-        }
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun Preee() {
+//    NoteProjectTheme {
+//        Column {
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                modifier = Modifier.fillMaxWidth()
+//            ) {
+//                Box(
+//                    modifier = Modifier
+//                        .padding(10.dp)// ◁ 버튼 크기 지정
+//                        .size(40.dp),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Text(text = "◁", color = Color.Black)
+//                }
+//                Text(
+//                    text = "제목근데김근데김근데김근데김근데김",
+//                    fontWeight = FontWeight.Bold,
+//                    fontSize = 25.sp,
+//                    modifier = Modifier.weight(1f),
+//                    maxLines = 1,
+//                    overflow = TextOverflow.Ellipsis, // 제목이 길어질 경우 ...로 처리
+//                )
+//                Box(
+//                    modifier = Modifier
+//                        .padding(10.dp)
+//                        .size(height = 30.dp, width = 40.dp) // 편집 버튼 크기 지정
+//                        .border(1.dp, shape = RoundedCornerShape(5.dp), color = Color.Black),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Text(text = "편집", color = Color.Black)
+//                }
+//            }
+//            Divider()
+//            LazyColumn() {
+//                item {
+//                    Text(
+//                        text = "내용이없음", modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(15.dp)
+//                    )
+//
+//                }
+//            }
+//        }
+//    }
+//}
