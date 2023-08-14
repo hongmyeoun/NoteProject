@@ -33,6 +33,9 @@ import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class NewNotePage : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +80,8 @@ class NewNotePage : ComponentActivity() {
                                 .padding(10.dp)
                                 .size(height = 30.dp, width = 40.dp)
                                 .clickable {
-                                    val newNote = Note(title = noteTitle, script = noteText)
+                                    val currentDate = SimpleDateFormat("yy.MM.dd", Locale.getDefault()).format(Date())
+                                    val newNote = Note(title = noteTitle, script = noteText, createdDate = currentDate)
                                     scope.launch(Dispatchers.IO) { db.noteDao().insertAll(newNote) }
                                     val intent = Intent(context, MainActivity::class.java)
                                     context.startActivity(intent)

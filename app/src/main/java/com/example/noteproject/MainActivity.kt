@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 var deletPressed by remember { mutableStateOf(false)}
+                var deletingNote by remember { mutableStateOf<Note?>(null) }
+
                 val scope = rememberCoroutineScope()
 
                 Box() {
@@ -105,16 +108,6 @@ class MainActivity : ComponentActivity() {
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     for (note in chunkedNoteList[rowIndex]) {
-                                        if (deletPressed) {
-                                            DeleteAlet(
-                                                onDismiss = {
-                                                    deletPressed = false
-                                                },
-                                                onDelete = {
-                                                    scope.launch(Dispatchers.IO) { db.noteDao().delete(note) }
-                                                }
-                                            )
-                                        }
                                         Column(
                                             modifier = Modifier
                                                 .weight(1f)
@@ -130,11 +123,30 @@ class MainActivity : ComponentActivity() {
                                                         },
                                                         onLongPress = {
                                                             deletPressed = true
+                                                            deletingNote = note // 삭제될 노트 저장
+
                                                         }
                                                     )
                                                 },
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
+                                            deletingNote?.let { note ->
+                                                if (deletPressed) {
+                                                    DeleteAlet(
+                                                        onDismiss = {
+                                                            deletPressed = false
+                                                            deletingNote = null // 삭제 모드가 해제되면 노트도 초기화
+                                                        },
+                                                        onDelete = {
+                                                            scope.launch(Dispatchers.IO) {
+                                                                db.noteDao().delete(note) // 선택한 노트를 삭제
+                                                            }
+                                                            deletPressed = false // 삭제 완료 후 삭제 모드 해제
+                                                            deletingNote = null // 삭제 완료 후 노트 초기화
+                                                        }
+                                                    )
+                                                }
+                                            }
                                             Box(
                                                 modifier = Modifier
                                                     .size(height = 170.dp, width = 120.dp)
@@ -154,6 +166,7 @@ class MainActivity : ComponentActivity() {
                                                 overflow = TextOverflow.Ellipsis,
                                                 fontWeight = FontWeight.Bold
                                             )
+                                            Text(text = "${note.createdDate}")
                                             Spacer(modifier = Modifier.height(20.dp))
 
                                         }
