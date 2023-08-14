@@ -4,11 +4,15 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
@@ -58,36 +63,46 @@ class EdittingPage : ComponentActivity() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Button(
-                            onClick = {
-                                val intent = Intent(context, MainActivity::class.java)
-                                context.startActivity(intent)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                        Box(
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .size(40.dp)
+                                .clickable {
+                                    val intent = Intent(context, MainActivity::class.java)
+                                    context.startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(text = "◁", color = Color.Black)
                         }
                         TextField(
                             value = editNoteTitle,
                             onValueChange = { editNoteTitle = it },
-                            colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
+                            colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1
                         )
-                        Button(
-                            onClick = {
-                                scope.launch(Dispatchers.IO) {
-                                    foundNote2?.title = editNoteTitle
-                                    foundNote2?.script = editNoteText
-                                    if (foundNote2 != null) {
-                                        db.noteDao().update(foundNote2)
+                        Box(
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .size(height = 30.dp, width = 40.dp)
+                                .clickable {
+                                    scope.launch(Dispatchers.IO) {
+                                        foundNote2?.title = editNoteTitle
+                                        foundNote2?.script = editNoteText
+                                        if (foundNote2 != null) {
+                                            db
+                                                .noteDao()
+                                                .update(foundNote2)
+                                        }
                                     }
-                                }
-                                val intent = Intent(context, ShowTextPage::class.java)
-                                intent.putExtra("Uid", foundNote2!!.uid)
-                                startActivity(intent)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                                    val intent = Intent(context, ShowTextPage::class.java)
+                                    intent.putExtra("Uid", foundNote2!!.uid)
+                                    startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "💾")
+                            Text(text = "\uD83D\uDCBE", color = Color.Black)
                         }
                     }
                     TextField(
