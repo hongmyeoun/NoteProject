@@ -1,13 +1,9 @@
 package com.example.noteproject
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -56,13 +49,7 @@ class NewNotePage : ComponentActivity() {
 
                 var noteTitle by remember { mutableStateOf("") }
                 var noteText by remember { mutableStateOf("") }
-                var selectUri by remember { mutableStateOf<Uri?>(null) }
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.PickVisualMedia(),
-                    onResult = { uri ->
-                        selectUri = uri
-                    }
-                )
+
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -89,19 +76,13 @@ class NewNotePage : ComponentActivity() {
                             modifier = Modifier.weight(1f),
                             maxLines = 1
                         )
-                        Icon(imageVector = Icons.Default.Favorite,
-                            contentDescription = "",
-                            modifier = Modifier.clickable {
-                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }
-                        )
                         Box(
                             modifier = Modifier
                                 .padding(10.dp)
                                 .size(height = 30.dp, width = 40.dp)
                                 .clickable {
                                     val currentDate = SimpleDateFormat("yy.MM.dd", Locale.getDefault()).format(Date())
-                                    val newNote = Note(title = noteTitle, script = noteText, createdDate = currentDate, imageUri = selectUri?.toString())
+                                    val newNote = Note(title = noteTitle, script = noteText, createdDate = currentDate)
                                     scope.launch(Dispatchers.IO) { db.noteDao().insertAll(newNote) }
                                     val intent = Intent(context, MainActivity::class.java)
                                     context.startActivity(intent)
