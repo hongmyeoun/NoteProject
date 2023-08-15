@@ -27,9 +27,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -122,7 +119,7 @@ class ShowTextPage : ComponentActivity() {
                             fontFamily = FontFamily(Font(R.font.handfont))
                         )
                         Icon(
-                            imageVector = Icons.Default.Favorite,
+                            painter = painterResource(id = R.drawable.image_icon),
                             contentDescription = "get Image",
                             modifier = Modifier
                                 .clickable {
@@ -145,17 +142,19 @@ class ShowTextPage : ComponentActivity() {
                             })
                         Spacer(modifier = Modifier.size(3.dp))
                         Icon(
-                            imageVector = Icons.TwoTone.Delete,
+                            painter = painterResource(id = R.drawable.delete),
                             contentDescription = "Delete",
                             modifier = Modifier
                                 .clickable {
                                     scope.launch(Dispatchers.IO) {
-                                        db.noteDao()
+                                        db
+                                            .noteDao()
                                             .delete(foundNote!!) // 선택한 노트를 삭제
                                     }
                                     val intent = Intent(context, MainActivity::class.java)
                                     context.startActivity(intent)
                                 })
+                        Spacer(modifier = Modifier.size(3.dp))
                     }
                     Divider()
                     LazyRow() {
@@ -218,7 +217,7 @@ class ShowTextPage : ComponentActivity() {
 @Composable
 fun TTSComponent(text: String, tts: TextToSpeech) {
     Icon(
-        imageVector = Icons.Default.PlayArrow,
+        painter = painterResource(id = R.drawable.volume),
         contentDescription = "tts play",
         modifier = Modifier
             .clickable {

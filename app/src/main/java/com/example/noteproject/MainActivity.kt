@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.sharp.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -124,7 +123,9 @@ class MainActivity : ComponentActivity() {
                         Text(
                             text = "노트 ${noteList.size}개",
                             fontWeight = FontWeight.Light,
-                            fontSize = 25.sp, fontFamily = FontFamily(Font(R.font.handfont))
+                            fontSize = 25.sp,
+                            fontFamily = FontFamily(Font(R.font.handfont))
+
                         )
                         Spacer(modifier = Modifier.size(50.dp))
 
@@ -207,7 +208,7 @@ class MainActivity : ComponentActivity() {
                                                 overflow = TextOverflow.Ellipsis,
                                                 fontWeight = FontWeight.Bold,
                                                 fontFamily = FontFamily(Font(R.font.handfont)),
-                                                fontSize = 40.sp
+                                                fontSize = 30.sp
                                             )
                                             Text(
                                                 text = "${note.createdDate}",
@@ -230,8 +231,7 @@ class MainActivity : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Sharp.AddCircle,
-
+                            painter = painterResource(id = R.drawable.note_add),
                             contentDescription = "newNote",
                             modifier = Modifier
                                 .clickable {
