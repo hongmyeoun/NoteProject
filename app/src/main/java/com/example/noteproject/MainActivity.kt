@@ -8,6 +8,7 @@ import android.view.WindowInsets.Type.systemBars
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,11 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,9 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,11 +53,40 @@ import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+
 class MainActivity : ComponentActivity() {
+
+//    private val READ_REQUEST_CODE = 42
+//
+//    private val requestPermissionLauncher: ActivityResultLauncher<String> =
+//        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+//            if (isGranted) {
+//                openMediaDocument()
+//            } else {
+//                // Handle permission denied
+//            }
+//        }
+//
+//    private val pickMediaLauncher: ActivityResultLauncher<String> =
+//        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+//            if (uri != null) {
+//                // Process the selected media URI
+//                // Here you can use the URI to display or manipulate the media
+//            }
+//        }
+
+
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+//        val permission = android.Manifest.permission.READ_EXTERNAL_STORAGE
+//        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+//            openMediaDocument()
+//        } else {
+//            requestPermissionLauncher.launch(permission)
+//        }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -65,13 +95,13 @@ class MainActivity : ComponentActivity() {
         windowInsetsController.hide(systemBars())
 
         setContent {
-
             NoteProjectTheme {
 
                 val context = LocalContext.current
+
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
-                var deletPressed by remember { mutableStateOf(false)}
+                var deletPressed by remember { mutableStateOf(false) }
                 var deletingNote by remember { mutableStateOf<Note?>(null) }
 
                 val scope = rememberCoroutineScope()
@@ -84,11 +114,18 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Spacer(modifier = Modifier.size(50.dp))
-                        Text(text = "모든 노트", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+                        Text(
+                            text = "나의 노트",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 75.sp,
+                            fontFamily = FontFamily(Font(R.font.handfont))
+                        )
                         Text(
                             text = "노트 ${noteList.size}개",
                             fontWeight = FontWeight.Light,
-                            fontSize = 10.sp
+                            fontSize = 25.sp,
+                            fontFamily = FontFamily(Font(R.font.handfont))
+
                         )
                         Spacer(modifier = Modifier.size(50.dp))
 
@@ -124,7 +161,6 @@ class MainActivity : ComponentActivity() {
                                                         onLongPress = {
                                                             deletPressed = true
                                                             deletingNote = note // 삭제될 노트 저장
-
                                                         }
                                                     )
                                                 },
@@ -135,11 +171,13 @@ class MainActivity : ComponentActivity() {
                                                     DeleteAlet(
                                                         onDismiss = {
                                                             deletPressed = false
-                                                            deletingNote = null // 삭제 모드가 해제되면 노트도 초기화
+                                                            deletingNote =
+                                                                null // 삭제 모드가 해제되면 노트도 초기화
                                                         },
                                                         onDelete = {
                                                             scope.launch(Dispatchers.IO) {
-                                                                db.noteDao().delete(note) // 선택한 노트를 삭제
+                                                                db.noteDao()
+                                                                    .delete(note) // 선택한 노트를 삭제
                                                             }
                                                             deletPressed = false // 삭제 완료 후 삭제 모드 해제
                                                             deletingNote = null // 삭제 완료 후 노트 초기화
@@ -157,16 +195,27 @@ class MainActivity : ComponentActivity() {
                                                     .padding(10.dp)
 
                                             ) {
-                                                Text(text = note.script!!)
+                                                Text(
+                                                    text = note.script!!,
+                                                    fontFamily = FontFamily(Font(R.font.handfont)),
+                                                    fontSize = 25.sp
+                                                )
                                             }
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "${note.title}",
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
-                                                fontWeight = FontWeight.Bold
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily(Font(R.font.handfont)),
+                                                fontSize = 30.sp
                                             )
-                                            Text(text = "${note.createdDate}")
+                                            Text(
+                                                text = "${note.createdDate}",
+                                                fontWeight = FontWeight.Light,
+                                                fontSize = 20.sp,
+                                                fontFamily = FontFamily(Font(R.font.handfont))
+                                            )
                                             Spacer(modifier = Modifier.height(20.dp))
 
                                         }
@@ -181,29 +230,24 @@ class MainActivity : ComponentActivity() {
                             .padding(end = 30.dp, bottom = 50.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            onClick = {
-                                val intent = Intent(context, NewNotePage::class.java)
-                                context.startActivity(intent)
-                            },
+                        Icon(
+                            painter = painterResource(id = R.drawable.note_add),
+                            contentDescription = "newNote",
                             modifier = Modifier
-                                .size(60.dp)
-                                .shadow(1.dp, shape = CircleShape)
-                                .align(Alignment.Center),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                            shape = CircleShape
-                        ) {
-                            Text(
-                                "📝",
-                                color = Color.Black,
-                                fontSize = 20.sp,
-                            )
-                        }
+                                .clickable {
+                                    val intent = Intent(context, NewNotePage::class.java)
+                                    context.startActivity(intent)
+                                }
+                                .size(50.dp)
+                        )
                     }
                 }
             }
         }
     }
+//    private fun openMediaDocument() {
+//        pickMediaLauncher.launch("image/*") // Change "image/*" to the desired media type
+//    }
 }
 
 
@@ -224,7 +268,7 @@ fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
                     onDismiss()
                 }
             ) {
-                Text(text = "진행시켜!")
+                Text(text = "삭제!")
             }
         },
         dismissButton = {
