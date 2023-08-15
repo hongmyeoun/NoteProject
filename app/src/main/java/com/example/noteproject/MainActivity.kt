@@ -196,7 +196,11 @@ class MainActivity : ComponentActivity() {
                                                 overflow = TextOverflow.Ellipsis,
                                                 fontWeight = FontWeight.Bold
                                             )
-                                            Text(text = "${note.createdDate}")
+                                            Text(
+                                                text = "${note.createdDate}",
+                                                fontWeight = FontWeight.Light,
+                                                fontSize = 10.sp
+                                            )
                                             Spacer(modifier = Modifier.height(20.dp))
 
                                         }
@@ -250,7 +254,7 @@ fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
                     onDismiss()
                 }
             ) {
-                Text(text = "진행시켜!")
+                Text(text = "삭제!")
             }
         },
         dismissButton = {

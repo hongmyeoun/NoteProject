@@ -2,8 +2,11 @@ package com.example.noteproject
 
 import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,8 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.collectAsState
@@ -27,7 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
@@ -53,60 +61,125 @@ class EdittingPage : ComponentActivity() {
                 var editNoteTitle by remember { mutableStateOf(title) }
                 var editNoteText by remember { mutableStateOf(script) }
 
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .size(40.dp)
-                                .clickable {
-                                    val intent = Intent(context, MainActivity::class.java)
-                                    context.startActivity(intent)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "◁", color = Color.Black)
-                        }
-                        TextField(
-                            value = editNoteTitle,
-                            onValueChange = { editNoteTitle = it },
-                            colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1
-                        )
-                        Box(
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .size(height = 30.dp, width = 40.dp)
-                                .clickable {
-                                    scope.launch(Dispatchers.IO) {
-                                        foundNote2?.title = editNoteTitle
-                                        foundNote2?.script = editNoteText
-                                        if (foundNote2 != null) {
-                                            db
-                                                .noteDao()
-                                                .update(foundNote2)
-                                        }
-                                    }
-                                    val intent = Intent(context, ShowTextPage::class.java)
-                                    intent.putExtra("Uid", foundNote2!!.uid)
-                                    startActivity(intent)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "\uD83D\uDCBE", color = Color.Black)
+                var recognizedText by remember { mutableStateOf("") }
+                var isRecognitionEnabled by remember { mutableStateOf(true) }
+
+                val speechRecognizerLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    if (result.resultCode == RESULT_OK) {
+                        val data: Intent? = result.data
+                        val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                        if (!results.isNullOrEmpty()) {
+                            recognizedText = " " + results[0]
+                            isRecognitionEnabled = false
                         }
                     }
-                    TextField(
-                        value = editNoteText,
-                        onValueChange = { editNoteText = it },
-                        modifier = Modifier.fillMaxSize(),
-                        colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-                    )
+                }
+                Box {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.back),
+                                contentDescription = "Back Button",
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .size(40.dp)
+                                    .clickable {
+                                        val intent = Intent(context, MainActivity::class.java)
+                                        context.startActivity(intent)
+                                    }
+                            )
+                            TextField(
+                                value = editNoteTitle,
+                                onValueChange = { editNoteTitle = it },
+                                colors = TextFieldDefaults.textFieldColors(
+                                    containerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                textStyle = TextStyle(
+                                    fontSize = 25.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
+                                contentDescription = "Save",
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .size(height = 30.dp, width = 40.dp)
+                                    .clickable(enabled = isRecognitionEnabled) {
+                                        scope.launch(Dispatchers.IO) {
+                                            foundNote2?.title = editNoteTitle
+                                            foundNote2?.script = editNoteText
+                                            if (foundNote2 != null) {
+                                                db
+                                                    .noteDao()
+                                                    .update(foundNote2)
+                                            }
+                                        }
+                                        val intent = Intent(context, ShowTextPage::class.java)
+                                        intent.putExtra("Uid", foundNote2!!.uid)
+                                        startActivity(intent)
+                                    }
+                            )
+                        }
+                        Divider()
+                        TextField(
+                            value = editNoteText + recognizedText,
+                            onValueChange = {
+                                editNoteText = it
+                                recognizedText = ""
+                                isRecognitionEnabled = true
+                            },
+                            modifier = Modifier.fillMaxSize(),
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            )
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 30.dp, bottom = 50.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column {
+                            Icon(
+                                painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
+                                contentDescription = "mic",
+                                modifier = Modifier
+                                    .clickable(enabled = isRecognitionEnabled) {
+                                        val intent =
+                                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                        intent.putExtra(
+                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                        )
+                                        speechRecognizerLauncher.launch(intent)
+                                    }
+                                    .size(50.dp)
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_restart_alt_24),
+                                contentDescription = "mic",
+                                modifier = Modifier
+                                    .clickable {
+                                        recognizedText = ""
+                                        isRecognitionEnabled = true
+                                    }
+                                    .size(50.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

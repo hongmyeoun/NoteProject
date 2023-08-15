@@ -16,8 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Done
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -33,8 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
@@ -75,45 +77,57 @@ class NewNotePage : ComponentActivity() {
                 }
 
                 Box {
-                    Column() {
+                    Column {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
+                            Icon(
+                                painter = painterResource(id = R.drawable.back),
+                                contentDescription = "Back Button",
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .size(40.dp)
                                     .clickable {
                                         val intent = Intent(context, MainActivity::class.java)
                                         context.startActivity(intent)
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "◁", color = Color.Black)
-                            }
+                                    }
+                            )
                             TextField(
                                 value = noteTitle,
                                 onValueChange = { noteTitle = it },
-                                placeholder = { Text(text = "제목", fontStyle = FontStyle.Italic) },
-                                colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                                placeholder = {
+                                    Text(
+                                        text = "제목",
+                                        fontStyle = FontStyle.Italic,
+                                        fontSize = 25.sp
+                                    )
+                                },
+                                colors = TextFieldDefaults.textFieldColors(
+                                    containerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
                                 modifier = Modifier.weight(1f),
-                                maxLines = 1
+                                maxLines = 1,
+                                textStyle = TextStyle(
+                                    fontSize = 25.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
+                            Icon(
+                                painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
                                 contentDescription = "Save",
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .size(height = 30.dp, width = 40.dp)
                                     .clickable(enabled = isRecognitionEnabled) {
-                                        val currentDate =
-                                            SimpleDateFormat(
-                                                "yy.MM.dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
+                                        val currentDate = SimpleDateFormat(
+                                            "yy.MM.dd", Locale.getDefault()
+                                        ).format(
+                                            Date()
+                                        )
                                         val newNote = Note(
                                             title = noteTitle,
                                             script = noteText,
@@ -126,9 +140,9 @@ class NewNotePage : ComponentActivity() {
                                         }
                                         val intent = Intent(context, MainActivity::class.java)
                                         context.startActivity(intent)
-                                    }
-                            )
+                                    })
                         }
+                        Divider()
                         TextField(
                             value = noteText + recognizedText,
                             onValueChange = {
@@ -137,7 +151,11 @@ class NewNotePage : ComponentActivity() {
                                 isRecognitionEnabled = true
                             },
                             modifier = Modifier.fillMaxSize(),
-                            colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            )
                         )
                     }
                     Box(
@@ -147,8 +165,7 @@ class NewNotePage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            Icon(
-                                painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
+                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
                                 contentDescription = "mic",
                                 modifier = Modifier
                                     .clickable(enabled = isRecognitionEnabled) {
@@ -160,18 +177,15 @@ class NewNotePage : ComponentActivity() {
                                         )
                                         speechRecognizerLauncher.launch(intent)
                                     }
-                                    .size(50.dp)
-                            )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_restart_alt_24),
+                                    .size(50.dp))
+                            Icon(painter = painterResource(id = R.drawable.baseline_restart_alt_24),
                                 contentDescription = "mic",
                                 modifier = Modifier
                                     .clickable {
                                         recognizedText = ""
                                         isRecognitionEnabled = true
                                     }
-                                    .size(50.dp)
-                            )
+                                    .size(50.dp))
                         }
                     }
                 }
@@ -179,34 +193,3 @@ class NewNotePage : ComponentActivity() {
         }
     }
 }
-
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Preview(showBackground = true)
-//@Composable
-//fun Preview2() {
-//    var noteTitle by remember { mutableStateOf("제목") }
-//    var noteText by remember { mutableStateOf("") }
-//    NoteProjectTheme {
-//        Column {
-//            Row {
-//                Button(onClick = { /*TODO*/ }) {
-//                    Text(text = "<")
-//                }
-//                TextField(
-//                    value = noteTitle,
-//                    onValueChange = { noteTitle = it },
-//                    colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-//                )
-//                Button(onClick = { /*TODO*/ }) {
-//                    Text(text = "💾")
-//                }
-//            }
-//            TextField(
-//                value = noteText,
-//                onValueChange = { noteText = it },
-//                modifier = Modifier.fillMaxSize(),
-//                colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent)
-//            )
-//        }
-//    }
-//}
