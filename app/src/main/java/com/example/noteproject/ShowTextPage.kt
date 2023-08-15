@@ -18,16 +18,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -36,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -82,6 +88,7 @@ class ShowTextPage : ComponentActivity() {
                         selectUris = uris
                     }
                 )
+                val scope = rememberCoroutineScope()
 
                 val foundNote = noteList.find { it.uid == targetUid }
 
@@ -119,9 +126,11 @@ class ShowTextPage : ComponentActivity() {
                                 .clickable {
                                     launcher2.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                                 })
+                        Spacer(modifier = Modifier.size(3.dp))
                         if (foundNote != null) {
                             TTSComponent(foundNote.script!!, textToSpeech)
                         }
+                        Spacer(modifier = Modifier.size(3.dp))
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "edit",
@@ -132,7 +141,19 @@ class ShowTextPage : ComponentActivity() {
                                 intent.putExtra("script", foundNote.script)
                                 context.startActivity(intent)
                             })
-
+                        Spacer(modifier = Modifier.size(3.dp))
+                        Icon(
+                            imageVector = Icons.TwoTone.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier
+                                .clickable {
+                                    scope.launch(Dispatchers.IO) {
+                                        db.noteDao()
+                                            .delete(foundNote!!) // 선택한 노트를 삭제
+                                    }
+                                    val intent = Intent(context, MainActivity::class.java)
+                                    context.startActivity(intent)
+                                })
                     }
                     Divider()
                     LazyRow() {
@@ -156,19 +177,23 @@ class ShowTextPage : ComponentActivity() {
                     LazyColumn() {
                         item {
                             if (foundNote?.script != null) {
-                                Text(
-                                    text = foundNote.script ?: "",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(15.dp)
-                                )
+                                SelectionContainer {
+                                    Text(
+                                        text = foundNote.script ?: "",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(15.dp)
+                                    )
+                                }
                             } else {
-                                Text(
-                                    text = "내용이없음",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(15.dp)
-                                )
+                                SelectionContainer {
+                                    Text(
+                                        text = "내용이없음",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(15.dp)
+                                    )
+                                }
                             }
                         }
                     }
