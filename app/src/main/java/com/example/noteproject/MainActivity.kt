@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -113,11 +115,16 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Spacer(modifier = Modifier.size(50.dp))
-                        Text(text = "모든 노트", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+                        Text(
+                            text = "나의 노트",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 75.sp,
+                            fontFamily = FontFamily(Font(R.font.handfont))
+                        )
                         Text(
                             text = "노트 ${noteList.size}개",
                             fontWeight = FontWeight.Light,
-                            fontSize = 10.sp
+                            fontSize = 25.sp, fontFamily = FontFamily(Font(R.font.handfont))
                         )
                         Spacer(modifier = Modifier.size(50.dp))
 
@@ -187,19 +194,26 @@ class MainActivity : ComponentActivity() {
                                                     .padding(10.dp)
 
                                             ) {
-                                                Text(text = note.script!!)
+                                                Text(
+                                                    text = note.script!!,
+                                                    fontFamily = FontFamily(Font(R.font.handfont)),
+                                                    fontSize = 25.sp
+                                                )
                                             }
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "${note.title}",
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
-                                                fontWeight = FontWeight.Bold
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily(Font(R.font.handfont)),
+                                                fontSize = 40.sp
                                             )
                                             Text(
                                                 text = "${note.createdDate}",
                                                 fontWeight = FontWeight.Light,
-                                                fontSize = 10.sp
+                                                fontSize = 20.sp,
+                                                fontFamily = FontFamily(Font(R.font.handfont))
                                             )
                                             Spacer(modifier = Modifier.height(20.dp))
 

@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -105,8 +107,9 @@ class EdittingPage : ComponentActivity() {
                                 modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 textStyle = TextStyle(
-                                    fontSize = 25.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 35.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.handfont))
                                 )
                             )
                             Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
@@ -143,6 +146,10 @@ class EdittingPage : ComponentActivity() {
                                 containerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            textStyle = TextStyle(
+                                fontSize = 25.sp,
+                                fontFamily = FontFamily(Font(R.font.handfont))
                             )
                         )
                     }

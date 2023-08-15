@@ -45,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -113,10 +115,11 @@ class ShowTextPage : ComponentActivity() {
                         Text(
                             text = foundNote?.title ?: "제목",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 25.sp,
+                            fontSize = 35.sp,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            fontFamily = FontFamily(Font(R.font.handfont))
                         )
                         Icon(
                             imageVector = Icons.Default.Favorite,
@@ -181,7 +184,9 @@ class ShowTextPage : ComponentActivity() {
                                         text = foundNote.script ?: "",
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(15.dp)
+                                            .padding(15.dp),
+                                        fontFamily = FontFamily(Font(R.font.handfont)),
+                                        fontSize = 25.sp
                                     )
                                 }
                             } else {
@@ -190,7 +195,9 @@ class ShowTextPage : ComponentActivity() {
                                         text = "내용이없음",
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(15.dp)
+                                            .padding(15.dp),
+                                        fontFamily = FontFamily(Font(R.font.handfont)),
+                                        fontSize = 25.sp
                                     )
                                 }
                             }

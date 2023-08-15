@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -101,7 +103,8 @@ class NewNotePage : ComponentActivity() {
                                     Text(
                                         text = "제목",
                                         fontStyle = FontStyle.Italic,
-                                        fontSize = 25.sp
+                                        fontSize = 35.sp,
+                                        fontFamily = FontFamily(Font(R.font.handfont))
                                     )
                                 },
                                 colors = TextFieldDefaults.textFieldColors(
@@ -112,8 +115,9 @@ class NewNotePage : ComponentActivity() {
                                 modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 textStyle = TextStyle(
-                                    fontSize = 25.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 35.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.handfont))
                                 )
                             )
                             Icon(
@@ -155,6 +159,10 @@ class NewNotePage : ComponentActivity() {
                                 containerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            textStyle = TextStyle(
+                                fontSize = 25.sp,
+                                fontFamily = FontFamily(Font(R.font.handfont))
                             )
                         )
                     }
