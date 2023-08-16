@@ -1,6 +1,5 @@
 package com.example.noteproject
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -72,19 +71,13 @@ class ShowTextPage : ComponentActivity() {
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 val targetUid = intent.getIntExtra("Uid", 0)
-//                var selectUri by remember { mutableStateOf<Uri?>(null) }
-//                val launcher = rememberLauncherForActivityResult(
-//                    contract = ActivityResultContracts.PickVisualMedia(),
-//                    onResult = { uri ->
-//                        selectUri = uri
-//                    }
-//                )
+
                 val scope = rememberCoroutineScope()
 
                 val foundNote = noteList.find { it.uid == targetUid }
 
-                val selectedUri = foundNote?.image?.let { Uri.parse(it) }
-
+                val selectedUrisList = foundNote?.imageListString
+                val uriList = selectedUrisList?.map { uriString -> Uri.parse(uriString) }
 
                 Column {
                     Row(
@@ -113,14 +106,6 @@ class ShowTextPage : ComponentActivity() {
                             overflow = TextOverflow.Ellipsis,
                             fontFamily = fontFamily()
                         )
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.image_icon),
-//                            contentDescription = "get Image",
-//                            modifier = Modifier
-//                                .clickable {
-//                                    launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-//                                })
-//                        Spacer(modifier = Modifier.size(3.dp))
                         if (foundNote != null) {
                             TTSComponent(foundNote.script!!, textToSpeech)
                         }
@@ -154,28 +139,33 @@ class ShowTextPage : ComponentActivity() {
                     Divider()
                     LazyRow() {
                         item {
-                            if (selectedUri != null) {
-                                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                    ImageDecoder.decodeBitmap(
-                                        ImageDecoder.createSource(
-                                            context.contentResolver,
-                                            selectedUri!!
+                            if (uriList != null) {
+                                if (uriList.isNotEmpty()) {
+                                    for (uri in uriList) {
+                                        val bitmap =
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                                ImageDecoder.decodeBitmap(
+                                                    ImageDecoder.createSource(
+                                                        context.contentResolver,
+                                                        uri!!
+                                                    )
+                                                )
+                                            } else {
+                                                MediaStore.Images.Media.getBitmap(
+                                                    context.contentResolver,
+                                                    uri
+                                                )
+                                            }
+                                        Image(
+                                            bitmap = bitmap.asImageBitmap(),
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .size(100.dp)
+                                                .shadow(2.dp)
                                         )
-                                    )
-                                } else {
-                                    MediaStore.Images.Media.getBitmap(
-                                        context.contentResolver,
-                                        selectedUri
-                                    )
+                                    }
                                 }
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(), contentDescription = "",
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .shadow(2.dp)
-                                )
                             }
-
                         }
                     }
                     LazyColumn() {
@@ -228,48 +218,3 @@ fun TTSComponent(text: String, tts: TextToSpeech) {
             }
     )
 }
-
-private fun setImageBitmap(uri: Uri, context: Context){
-    val bitmap = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
-        ImageDecoder.decodeBitmap(
-            ImageDecoder.createSource(context.contentResolver, uri)
-        )
-    }else{
-        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-    }
-}
-
-//private fun saveImagesToInternalStorage(context: Context, uris: List<Uri?>) {
-//    val directory = File(context.filesDir, "images")
-//    if (!directory.exists()) {
-//        directory.mkdirs()
-//    }
-//    for ((index, uri) in uris.withIndex()) {
-//        val inputStream = context.contentResolver.openInputStream(uri!!)
-//        val file = File(directory, "image_$index.jpg")
-//        val outputStream = FileOutputStream(file)
-//
-//        inputStream?.use { input ->
-//            outputStream.use { output ->
-//                input.copyTo(output)
-//            }
-//        }
-//    }
-//}
-//
-//private fun loadImagesFromInternalStorage(context: Context): List<Bitmap> {
-//    val imageBitmaps = mutableListOf<Bitmap>()
-//    val directory = File(context.filesDir, "images")
-//
-//    if (directory.exists()) {
-//        val imageFiles = directory.listFiles()
-//
-//        imageFiles?.forEach { file ->
-//            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-//            if (bitmap != null) {
-//                imageBitmaps.add(bitmap)
-//            }
-//        }
-//    }
-//    return imageBitmaps
-//}

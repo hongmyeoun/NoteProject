@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -70,15 +71,19 @@ class NewNotePage : ComponentActivity() {
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
 
-                var selectUri by remember { mutableStateOf<Uri?>(null) }
+                var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
                 val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.PickVisualMedia(),
-                    onResult = { uri ->
-                        selectUri = uri
-                        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        context.contentResolver.takePersistableUriPermission(selectUri!!, flag)
+                    contract = ActivityResultContracts.PickMultipleVisualMedia(),
+                    onResult = { uris ->
+                        selectUris = uris
+                        //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
+                        for (uri in selectUris) {
+                            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            context.contentResolver.takePersistableUriPermission(uri!!, flag)
+                        }
                     }
                 )
+                val uriStringList = selectUris.map { uri -> uri.toString() }
 
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
@@ -152,7 +157,7 @@ class NewNotePage : ComponentActivity() {
                                             title = noteTitle,
                                             script = noteText,
                                             createdDate = currentDate,
-                                            image = selectUri.toString()
+                                            imageListString = uriStringList
                                         )
                                         scope.launch(Dispatchers.IO) {
                                             db
@@ -164,23 +169,40 @@ class NewNotePage : ComponentActivity() {
                                     })
                         }
                         Divider()
-                        if (selectUri != null) {
-                            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                ImageDecoder.decodeBitmap(
-                                    ImageDecoder.createSource(
-                                        context.contentResolver,
-                                        selectUri!!
-                                    )
-                                )
-                            } else {
-                                MediaStore.Images.Media.getBitmap(context.contentResolver, selectUri)
+                        LazyRow() {
+                            item {
+                                if (selectUris.isNotEmpty()) {
+                                    for (uri in selectUris) {
+                                        val bitmap =
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                                ImageDecoder.decodeBitmap(
+                                                    ImageDecoder.createSource(
+                                                        context.contentResolver,
+                                                        uri!!
+                                                    )
+                                                )
+                                            } else {
+                                                MediaStore.Images.Media.getBitmap(
+                                                    context.contentResolver,
+                                                    uri
+                                                )
+                                            }
+                                        Image(
+                                            bitmap = bitmap.asImageBitmap(), contentDescription = "",
+                                            modifier = Modifier
+                                                .size(100.dp)
+                                                .shadow(2.dp)
+                                                .clickable {
+                                                    launcher.launch(
+                                                        PickVisualMediaRequest(
+                                                            ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                                                        )
+                                                    )
+                                                }
+                                        )
+                                    }
+                                }
                             }
-                            Image(
-                                bitmap = bitmap.asImageBitmap(), contentDescription = "",
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .shadow(2.dp)
-                            )
                         }
                         TextField(
                             value = noteText + recognizedText,

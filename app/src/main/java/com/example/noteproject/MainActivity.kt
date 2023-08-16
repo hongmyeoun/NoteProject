@@ -57,37 +57,10 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-//    private val READ_REQUEST_CODE = 42
-//
-//    private val requestPermissionLauncher: ActivityResultLauncher<String> =
-//        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-//            if (isGranted) {
-//                openMediaDocument()
-//            } else {
-//                // Handle permission denied
-//            }
-//        }
-//
-//    private val pickMediaLauncher: ActivityResultLauncher<String> =
-//        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-//            if (uri != null) {
-//                // Process the selected media URI
-//                // Here you can use the URI to display or manipulate the media
-//            }
-//        }
-
-
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-//        val permission = android.Manifest.permission.READ_EXTERNAL_STORAGE
-//        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
-//            openMediaDocument()
-//        } else {
-//            requestPermissionLauncher.launch(permission)
-//        }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
