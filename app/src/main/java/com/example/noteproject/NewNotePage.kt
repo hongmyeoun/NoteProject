@@ -77,7 +77,8 @@ class NewNotePage : ComponentActivity() {
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickMultipleVisualMedia(),
                     onResult = { uris ->
-                        selectUris = uris
+                        //기존에 골랐던 사진에 추가로 들어가기
+                        selectUris += uris
                         //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
                         for (uri in selectUris) {
                             val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
