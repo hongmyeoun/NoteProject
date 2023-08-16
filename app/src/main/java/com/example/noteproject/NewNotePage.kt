@@ -14,6 +14,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -84,7 +86,6 @@ class NewNotePage : ComponentActivity() {
                     }
                 )
                 val uriStringList = selectUris.map { uri -> uri.toString() }
-
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
@@ -171,8 +172,12 @@ class NewNotePage : ComponentActivity() {
                         Divider()
                         LazyRow() {
                             item {
+                                val removedUris = remember { mutableSetOf<Uri>() }
                                 if (selectUris.isNotEmpty()) {
                                     for (uri in selectUris) {
+                                        if (uri in removedUris){
+                                            continue
+                                        }
                                         val bitmap =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                                 ImageDecoder.decodeBitmap(
@@ -192,13 +197,14 @@ class NewNotePage : ComponentActivity() {
                                             modifier = Modifier
                                                 .size(100.dp)
                                                 .shadow(2.dp)
-                                                .clickable {
-                                                    launcher.launch(
-                                                        PickVisualMediaRequest(
-                                                            ActivityResultContracts.PickVisualMedia.ImageAndVideo
-                                                        )
-                                                    )
-                                                }
+                                                .pointerInput(Unit) {
+                                                detectTapGestures(
+                                                    onLongPress = {
+                                                        removedUris.add(uri!!)
+                                                        selectUris = selectUris - uri
+                                                    }
+                                                )
+                                            }
                                         )
                                     }
                                 }
