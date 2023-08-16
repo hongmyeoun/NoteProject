@@ -199,33 +199,34 @@ class EdittingPage : ComponentActivity() {
                                         )
                                     }
                                 }
-                                if (uriList != null) {
-                                    if (uriList!!.isNotEmpty()) {
-                                        for (uri in uriList!!) {
-                                            val bitmap =
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                                    ImageDecoder.decodeBitmap(
-                                                        ImageDecoder.createSource(
-                                                            context.contentResolver,
-                                                            uri!!
-                                                        )
-                                                    )
-                                                } else {
-                                                    MediaStore.Images.Media.getBitmap(
-                                                        context.contentResolver,
-                                                        uri
-                                                    )
-                                                }
-                                            Image(
-                                                bitmap = bitmap.asImageBitmap(),
-                                                contentDescription = "",
-                                                modifier = Modifier
-                                                    .size(100.dp)
-                                                    .shadow(2.dp)
-                                            )
-                                        }
-                                    }
-                                }
+//                                if (uriList != null) {
+//                                    if (uriList!!.isNotEmpty()) {
+//                                        for (uri in uriList!!) {
+//                                            val bitmap =
+//                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                                                    ImageDecoder.decodeBitmap(
+//                                                        ImageDecoder.createSource(
+//                                                            context.contentResolver,
+//                                                            uri!!
+//                                                        )
+//                                                    )
+//                                                } else {
+//                                                    MediaStore.Images.Media.getBitmap(
+//                                                        context.contentResolver,
+//                                                        uri
+//                                                    )
+//                                                }
+//                                            Image(
+//                                                bitmap = bitmap.asImageBitmap(),
+//                                                contentDescription = "",
+//                                                modifier = Modifier
+//                                                    .size(100.dp)
+//                                                    .shadow(2.dp)
+//                                            )
+////                                            selectUris += uri!!
+//                                        }
+//                                    }
+//                                }
                             }
                         }
                         TextField(
@@ -259,7 +260,7 @@ class EdittingPage : ComponentActivity() {
                                 modifier = Modifier
                                     .clickable {
                                         selectUris = uriList!!
-                                        uriList = emptyList()
+                                        uriList = null
                                         launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                                     }
                                     .size(50.dp))
