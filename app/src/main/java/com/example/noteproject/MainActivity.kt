@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -107,26 +108,23 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
 
                 Box() {
-
                     Column(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Spacer(modifier = Modifier.size(50.dp))
-                        Text(
-                            text = "나의 노트",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 75.sp,
-                            fontFamily = FontFamily(Font(R.font.handfont))
-                        )
-                        Text(
-                            text = "노트 ${noteList.size}개",
-                            fontWeight = FontWeight.Light,
-                            fontSize = 25.sp,
-                            fontFamily = FontFamily(Font(R.font.handfont))
-
-                        )
+                            Text(
+                                text = "나의 노트",
+                                fontSize = 50.sp,
+                                fontFamily = fontFamily()
+                            )
+                            Text(
+                                text = "노트 ${noteList.size}개",
+                                fontWeight = FontWeight.Light,
+                                fontSize = 10.sp,
+                                fontFamily = fontFamily()
+                            )
                         Spacer(modifier = Modifier.size(50.dp))
 
                         LazyColumn(
@@ -171,16 +169,17 @@ class MainActivity : ComponentActivity() {
                                                     DeleteAlet(
                                                         onDismiss = {
                                                             deletPressed = false
-                                                            deletingNote =
-                                                                null // 삭제 모드가 해제되면 노트도 초기화
+                                                            // 삭제 모드가 해제되면 노트도 초기화
+                                                            deletingNote = null
                                                         },
                                                         onDelete = {
                                                             scope.launch(Dispatchers.IO) {
-                                                                db.noteDao()
-                                                                    .delete(note) // 선택한 노트를 삭제
+                                                                db.noteDao().delete(note)
                                                             }
-                                                            deletPressed = false // 삭제 완료 후 삭제 모드 해제
-                                                            deletingNote = null // 삭제 완료 후 노트 초기화
+                                                            // 삭제 완료 후 삭제 모드 해제
+                                                            deletPressed = false
+                                                            // 삭제 완료 후 노트 초기화
+                                                            deletingNote = null
                                                         }
                                                     )
                                                 }
@@ -193,12 +192,11 @@ class MainActivity : ComponentActivity() {
                                                         shape = RoundedCornerShape(1.dp)
                                                     )
                                                     .padding(10.dp)
-
                                             ) {
                                                 Text(
                                                     text = note.script!!,
-                                                    fontFamily = FontFamily(Font(R.font.handfont)),
-                                                    fontSize = 25.sp
+                                                    fontFamily = fontFamily(),
+                                                    fontSize = 12.sp
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(2.dp))
@@ -206,18 +204,17 @@ class MainActivity : ComponentActivity() {
                                                 text = "${note.title}",
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
-                                                fontWeight = FontWeight.Bold,
-                                                fontFamily = FontFamily(Font(R.font.handfont)),
-                                                fontSize = 30.sp
+                                                fontFamily = fontFamily(),
+                                                fontSize = 20.sp
                                             )
                                             Text(
                                                 text = "${note.createdDate}",
                                                 fontWeight = FontWeight.Light,
-                                                fontSize = 20.sp,
-                                                fontFamily = FontFamily(Font(R.font.handfont))
+                                                fontSize = 10.sp,
+                                                color = Color.LightGray,
+                                                fontFamily = fontFamily()
                                             )
                                             Spacer(modifier = Modifier.height(20.dp))
-
                                         }
                                     }
                                 }
@@ -245,11 +242,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-//    private fun openMediaDocument() {
-//        pickMediaLauncher.launch("image/*") // Change "image/*" to the desired media type
-//    }
 }
 
+@Composable
+fun fontFamily() = FontFamily(Font(R.font.roboto))
 
 @Composable
 fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {

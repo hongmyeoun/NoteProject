@@ -1,12 +1,18 @@
 package com.example.noteproject
 
 import android.content.Intent
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,12 +35,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,6 +69,16 @@ class NewNotePage : ComponentActivity() {
 
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
+
+                var selectUri by remember { mutableStateOf<Uri?>(null) }
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.PickVisualMedia(),
+                    onResult = { uri ->
+                        selectUri = uri
+                        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        context.contentResolver.takePersistableUriPermission(selectUri!!, flag)
+                    }
+                )
 
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
@@ -103,8 +119,8 @@ class NewNotePage : ComponentActivity() {
                                     Text(
                                         text = "제목",
                                         fontStyle = FontStyle.Italic,
-                                        fontSize = 35.sp,
-                                        fontFamily = FontFamily(Font(R.font.handfont))
+                                        fontSize = 25.sp,
+                                        fontFamily = fontFamily()
                                     )
                                 },
                                 colors = TextFieldDefaults.textFieldColors(
@@ -115,9 +131,9 @@ class NewNotePage : ComponentActivity() {
                                 modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 textStyle = TextStyle(
-                                    fontSize = 35.sp,
+                                    fontSize = 25.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily(Font(R.font.handfont))
+                                    fontFamily = fontFamily()
                                 )
                             )
                             Icon(
@@ -135,7 +151,8 @@ class NewNotePage : ComponentActivity() {
                                         val newNote = Note(
                                             title = noteTitle,
                                             script = noteText,
-                                            createdDate = currentDate
+                                            createdDate = currentDate,
+                                            image = selectUri.toString()
                                         )
                                         scope.launch(Dispatchers.IO) {
                                             db
@@ -147,6 +164,24 @@ class NewNotePage : ComponentActivity() {
                                     })
                         }
                         Divider()
+                        if (selectUri != null) {
+                            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                ImageDecoder.decodeBitmap(
+                                    ImageDecoder.createSource(
+                                        context.contentResolver,
+                                        selectUri!!
+                                    )
+                                )
+                            } else {
+                                MediaStore.Images.Media.getBitmap(context.contentResolver, selectUri)
+                            }
+                            Image(
+                                bitmap = bitmap.asImageBitmap(), contentDescription = "",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .shadow(2.dp)
+                            )
+                        }
                         TextField(
                             value = noteText + recognizedText,
                             onValueChange = {
@@ -161,8 +196,8 @@ class NewNotePage : ComponentActivity() {
                                 unfocusedIndicatorColor = Color.Transparent
                             ),
                             textStyle = TextStyle(
-                                fontSize = 25.sp,
-                                fontFamily = FontFamily(Font(R.font.handfont))
+                                fontSize = 15.sp,
+                                fontFamily = fontFamily()
                             )
                         )
                     }
@@ -173,6 +208,14 @@ class NewNotePage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
+                            Icon(painter = painterResource(id = R.drawable.image_icon),
+                                contentDescription = "get image",
+                                modifier = Modifier
+                                    .clickable {
+                                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    }
+                                    .size(50.dp))
+
                             Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
                                 contentDescription = "mic",
                                 modifier = Modifier
@@ -187,7 +230,7 @@ class NewNotePage : ComponentActivity() {
                                     }
                                     .size(50.dp))
                             Icon(painter = painterResource(id = R.drawable.baseline_restart_alt_24),
-                                contentDescription = "mic",
+                                contentDescription = "recognized reset",
                                 modifier = Modifier
                                     .clickable {
                                         recognizedText = ""
