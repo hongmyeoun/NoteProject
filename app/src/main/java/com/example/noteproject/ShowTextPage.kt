@@ -77,7 +77,8 @@ class ShowTextPage : ComponentActivity() {
                 val foundNote = noteList.find { it.uid == targetUid }
 
                 val selectedUrisList = foundNote?.imageListString
-                val uriList = selectedUrisList?.map { uriString -> Uri.parse(uriString) }
+                val uriList: List<Uri?>? =
+                    selectedUrisList?.map { uriString -> Uri.parse(uriString) }
 
                 Column {
                     Row(
@@ -96,7 +97,6 @@ class ShowTextPage : ComponentActivity() {
                                     context.startActivity(intent)
                                 }
                         )
-
                         Text(
                             text = foundNote?.title ?: "제목",
                             fontWeight = FontWeight.Bold,
@@ -139,15 +139,15 @@ class ShowTextPage : ComponentActivity() {
                     Divider()
                     LazyRow() {
                         item {
-                            if (uriList != null) {
-                                if (uriList.isNotEmpty()) {
-                                    for (uri in uriList) {
+                            if (!uriList.isNullOrEmpty()) {
+                                for (uri in uriList) {
+                                    if (uri != null) {
                                         val bitmap =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                                 ImageDecoder.decodeBitmap(
                                                     ImageDecoder.createSource(
                                                         context.contentResolver,
-                                                        uri!!
+                                                        uri
                                                     )
                                                 )
                                             } else {
@@ -165,6 +165,7 @@ class ShowTextPage : ComponentActivity() {
                                         )
                                     }
                                 }
+
                             }
                         }
                     }

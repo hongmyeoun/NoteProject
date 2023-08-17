@@ -86,8 +86,11 @@ class NewNotePage : ComponentActivity() {
                         }
                     }
                 )
-                val uriStringList = selectUris.map { uri -> uri.toString() }
-
+                val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
+                    selectUris.map { uri -> uri.toString() }
+                } else {
+                    null
+                }
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -155,16 +158,29 @@ class NewNotePage : ComponentActivity() {
                                         ).format(
                                             Date()
                                         )
-                                        val newNote = Note(
-                                            title = noteTitle,
-                                            script = noteText,
-                                            createdDate = currentDate,
-                                            imageListString = uriStringList
-                                        )
-                                        scope.launch(Dispatchers.IO) {
-                                            db
-                                                .noteDao()
-                                                .insertAll(newNote)
+                                        if (uriStringList != null) {
+                                            val newNote = Note(
+                                                title = noteTitle,
+                                                script = noteText,
+                                                createdDate = currentDate,
+                                                imageListString = uriStringList
+                                            )
+                                            scope.launch(Dispatchers.IO) {
+                                                db
+                                                    .noteDao()
+                                                    .insertAll(newNote)
+                                            }
+                                        }else{
+                                            val newNote = Note(
+                                                title = noteTitle,
+                                                script = noteText,
+                                                createdDate = currentDate
+                                            )
+                                            scope.launch(Dispatchers.IO) {
+                                                db
+                                                    .noteDao()
+                                                    .insertAll(newNote)
+                                            }
                                         }
                                         val intent = Intent(context, MainActivity::class.java)
                                         context.startActivity(intent)
@@ -176,7 +192,7 @@ class NewNotePage : ComponentActivity() {
                                 val removedUris = remember { mutableSetOf<Uri>() }
                                 if (selectUris.isNotEmpty()) {
                                     for (uri in selectUris) {
-                                        if (uri in removedUris){
+                                        if (uri in removedUris) {
                                             continue
                                         }
                                         val bitmap =
@@ -194,18 +210,19 @@ class NewNotePage : ComponentActivity() {
                                                 )
                                             }
                                         Image(
-                                            bitmap = bitmap.asImageBitmap(), contentDescription = "",
+                                            bitmap = bitmap.asImageBitmap(),
+                                            contentDescription = "",
                                             modifier = Modifier
                                                 .size(100.dp)
                                                 .shadow(2.dp)
                                                 .pointerInput(Unit) {
-                                                detectTapGestures(
-                                                    onLongPress = {
-                                                        removedUris.add(uri!!)
-                                                        selectUris = selectUris - uri
-                                                    }
-                                                )
-                                            }
+                                                    detectTapGestures(
+                                                        onLongPress = {
+                                                            removedUris.add(uri!!)
+                                                            selectUris = selectUris - uri
+                                                        }
+                                                    )
+                                                }
                                         )
                                     }
                                 }
@@ -241,7 +258,11 @@ class NewNotePage : ComponentActivity() {
                                 contentDescription = "get image",
                                 modifier = Modifier
                                     .clickable {
-                                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                        launcher.launch(
+                                            PickVisualMediaRequest(
+                                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                                            )
+                                        )
                                     }
                                     .size(50.dp))
 

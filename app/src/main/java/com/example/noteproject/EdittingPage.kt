@@ -103,9 +103,11 @@ class EdittingPage : ComponentActivity() {
                         }
                     }
                 )
-                val uriStringList = selectUris.map { uri -> uri.toString() }
-
-
+                val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
+                    selectUris.map { uri -> uri.toString() }
+                } else {
+                    null
+                }
                 Box {
                     Column {
                         Row(
@@ -146,17 +148,31 @@ class EdittingPage : ComponentActivity() {
                                     .padding(10.dp)
                                     .size(height = 30.dp, width = 40.dp)
                                     .clickable(enabled = isRecognitionEnabled) {
-                                        scope.launch(Dispatchers.IO) {
-                                            foundNote2?.title = editNoteTitle
-                                            foundNote2?.script = editNoteText
-                                            foundNote2?.imageListString = uriStringList
-                                            if (foundNote2 != null) {
-                                                db.noteDao().update(foundNote2)
+                                        if (uriStringList != null){
+                                            scope.launch(Dispatchers.IO) {
+                                                foundNote2?.title = editNoteTitle
+                                                foundNote2?.script = editNoteText
+                                                foundNote2?.imageListString = uriStringList
+                                                if (foundNote2 != null) {
+                                                    db.noteDao().update(foundNote2)
+                                                }
                                             }
+                                            val intent = Intent(context, ShowTextPage::class.java)
+                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            startActivity(intent)
+                                        }else{
+                                            scope.launch(Dispatchers.IO) {
+                                                foundNote2?.title = editNoteTitle
+                                                foundNote2?.script = editNoteText
+                                                foundNote2?.imageListString = null
+                                                if (foundNote2 != null) {
+                                                    db.noteDao().update(foundNote2)
+                                                }
+                                            }
+                                            val intent = Intent(context, ShowTextPage::class.java)
+                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            startActivity(intent)
                                         }
-                                        val intent = Intent(context, ShowTextPage::class.java)
-                                        intent.putExtra("Uid", foundNote2!!.uid)
-                                        startActivity(intent)
                                     }
                             )
                         }
