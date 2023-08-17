@@ -10,6 +10,5 @@ data class Note(
     @ColumnInfo(name = "title") var title: String?,
     @ColumnInfo(name = "script") var script: String?,
     @ColumnInfo(name = "created_date") var createdDate: String?,
-    @ColumnInfo(name = "image") var image: String? = null,
     @ColumnInfo(name = "imageList") var imageListString: List<String?>? = null,
     )

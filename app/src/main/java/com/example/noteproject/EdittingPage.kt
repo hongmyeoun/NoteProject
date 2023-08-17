@@ -95,11 +95,6 @@ class EdittingPage : ComponentActivity() {
                 }
                 val selectedUrisList = foundNote2?.imageListString
 
-//                var uriList: List<Uri?> =
-//                    selectedUrisList?.map { uriString -> Uri.parse(uriString) } ?: emptyList()
-//                var selectUris by remember { mutableStateOf(uriList) }
-
-
                 val uriList: List<Uri?>? =
                     selectedUrisList?.map { uriString -> Uri.parse(uriString) }
                 var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
@@ -156,12 +151,15 @@ class EdittingPage : ComponentActivity() {
                                     fontFamily = fontFamily()
                                 )
                             )
-                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
+                            Icon(painter = painterResource(
+                                id =
+                                if (isRecognitionEnabled && isGetImageEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24
+                            ),
                                 contentDescription = "Save",
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .size(height = 30.dp, width = 40.dp)
-                                    .clickable(enabled = isRecognitionEnabled) {
+                                    .clickable(enabled = isRecognitionEnabled && isGetImageEnabled) {
                                         if (uriStringList != null) {
                                             scope.launch(Dispatchers.IO) {
                                                 foundNote2?.title = editNoteTitle
@@ -191,12 +189,69 @@ class EdittingPage : ComponentActivity() {
                                             intent.putExtra("Uid", foundNote2!!.uid)
                                             startActivity(intent)
                                         }
+
                                     }
                             )
                         }
                         Divider()
                         Column {
-                            if (isGetImageEnabled) {
+                            if (selectedUrisList != null) {
+                                if (isGetImageEnabled) {
+                                    LazyRow() {
+                                        items(selectUris) { uri ->
+                                            val bitmap =
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                                    ImageDecoder.decodeBitmap(
+                                                        ImageDecoder.createSource(
+                                                            context.contentResolver,
+                                                            uri!!
+                                                        )
+                                                    )
+                                                } else {
+                                                    MediaStore.Images.Media.getBitmap(
+                                                        context.contentResolver,
+                                                        uri
+                                                    )
+                                                }
+                                            Image(
+                                                bitmap = bitmap.asImageBitmap(),
+                                                contentDescription = "",
+                                                modifier = Modifier
+                                                    .size(100.dp)
+                                                    .shadow(2.dp)
+                                                    .pointerInput(Unit) {
+                                                        detectTapGestures(
+                                                            onLongPress = {
+                                                                selectUris = selectUris - uri
+                                                            }
+                                                        )
+                                                    }
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp)
+                                            .padding(20.dp)
+                                            .background(Color.Black)
+                                            .clickable {
+                                                if (!isGetImageEnabled) {
+                                                    selectUris = uriList!!
+                                                    isGetImageEnabled = true
+                                                }
+                                            },
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "이미지 가져오기(없어도 한번만)", fontSize = 15.sp,
+                                            fontFamily = fontFamily(), color = Color.White
+                                        )
+                                    }
+                                }
+                            } else {
                                 LazyRow() {
                                     items(selectUris) { uri ->
                                         val bitmap =
@@ -229,27 +284,6 @@ class EdittingPage : ComponentActivity() {
                                         )
                                     }
                                 }
-                            } else {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp)
-                                        .padding(20.dp)
-                                        .background(Color.Black)
-                                        .clickable {
-                                            if (!isGetImageEnabled) {
-                                                selectUris = uriList!!
-                                                isGetImageEnabled = true
-                                            }
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "이미지 가져오기", fontSize = 15.sp,
-                                        fontFamily = fontFamily(), color = Color.White
-                                    )
-                                }
                             }
                         }
                         TextField(
@@ -259,7 +293,9 @@ class EdittingPage : ComponentActivity() {
                                 recognizedText = ""
                                 isRecognitionEnabled = true
                             },
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { isGetImageEnabled = true },
                             colors = TextFieldDefaults.textFieldColors(
                                 containerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
@@ -278,8 +314,18 @@ class EdittingPage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            Icon(painter = painterResource(id = if (isGetImageEnabled) R.drawable.image_icon else R.drawable.image_search),
-                                contentDescription = "get image",
+                            Icon(painter = painterResource(
+                                id =
+                                if (selectedUrisList != null) {
+                                    if (isGetImageEnabled) {
+                                        R.drawable.image_icon
+                                    } else {
+                                        R.drawable.image_search
+                                    }
+                                } else {
+                                    R.drawable.image_icon
+                                }
+                            ), contentDescription = "get image",
                                 modifier = Modifier
                                     .clickable {
                                         if (!isGetImageEnabled) {
@@ -295,7 +341,8 @@ class EdittingPage : ComponentActivity() {
                                     }
                                     .size(50.dp))
                             Icon(
-                                painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
+                                painter =
+                                painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
                                 contentDescription = "mic",
                                 modifier = Modifier
                                     .clickable(enabled = isRecognitionEnabled) {
