@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +22,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +79,7 @@ class EdittingPage : ComponentActivity() {
 
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
+                var isGetImageEnabled by remember { mutableStateOf(false) }
 
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
@@ -88,9 +94,16 @@ class EdittingPage : ComponentActivity() {
                     }
                 }
                 val selectedUrisList = foundNote2?.imageListString
-                var uriList:List<Uri?>? = selectedUrisList?.map { uriString -> Uri.parse(uriString) }
 
+//                var uriList: List<Uri?> =
+//                    selectedUrisList?.map { uriString -> Uri.parse(uriString) } ?: emptyList()
+//                var selectUris by remember { mutableStateOf(uriList) }
+
+
+                val uriList: List<Uri?>? =
+                    selectedUrisList?.map { uriString -> Uri.parse(uriString) }
                 var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
+
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickMultipleVisualMedia(),
                     onResult = { uris ->
@@ -108,6 +121,7 @@ class EdittingPage : ComponentActivity() {
                 } else {
                     null
                 }
+
                 Box {
                     Column {
                         Row(
@@ -148,25 +162,29 @@ class EdittingPage : ComponentActivity() {
                                     .padding(10.dp)
                                     .size(height = 30.dp, width = 40.dp)
                                     .clickable(enabled = isRecognitionEnabled) {
-                                        if (uriStringList != null){
+                                        if (uriStringList != null) {
                                             scope.launch(Dispatchers.IO) {
                                                 foundNote2?.title = editNoteTitle
                                                 foundNote2?.script = editNoteText
                                                 foundNote2?.imageListString = uriStringList
                                                 if (foundNote2 != null) {
-                                                    db.noteDao().update(foundNote2)
+                                                    db
+                                                        .noteDao()
+                                                        .update(foundNote2)
                                                 }
                                             }
                                             val intent = Intent(context, ShowTextPage::class.java)
                                             intent.putExtra("Uid", foundNote2!!.uid)
                                             startActivity(intent)
-                                        }else{
+                                        } else {
                                             scope.launch(Dispatchers.IO) {
                                                 foundNote2?.title = editNoteTitle
                                                 foundNote2?.script = editNoteText
                                                 foundNote2?.imageListString = null
                                                 if (foundNote2 != null) {
-                                                    db.noteDao().update(foundNote2)
+                                                    db
+                                                        .noteDao()
+                                                        .update(foundNote2)
                                                 }
                                             }
                                             val intent = Intent(context, ShowTextPage::class.java)
@@ -177,14 +195,10 @@ class EdittingPage : ComponentActivity() {
                             )
                         }
                         Divider()
-                        LazyRow() {
-                            item {
-                                val removedUris = remember { mutableSetOf<Uri>() }
-                                if (selectUris.isNotEmpty()) {
-                                    for (uri in selectUris) {
-                                        if (uri in removedUris){
-                                            continue
-                                        }
+                        Column {
+                            if (isGetImageEnabled) {
+                                LazyRow() {
+                                    items(selectUris) { uri ->
                                         val bitmap =
                                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                                 ImageDecoder.decodeBitmap(
@@ -200,14 +214,14 @@ class EdittingPage : ComponentActivity() {
                                                 )
                                             }
                                         Image(
-                                            bitmap = bitmap.asImageBitmap(), contentDescription = "",
+                                            bitmap = bitmap.asImageBitmap(),
+                                            contentDescription = "",
                                             modifier = Modifier
                                                 .size(100.dp)
                                                 .shadow(2.dp)
                                                 .pointerInput(Unit) {
                                                     detectTapGestures(
                                                         onLongPress = {
-                                                            removedUris.add(uri!!)
                                                             selectUris = selectUris - uri
                                                         }
                                                     )
@@ -215,34 +229,27 @@ class EdittingPage : ComponentActivity() {
                                         )
                                     }
                                 }
-//                                if (uriList != null) {
-//                                    if (uriList!!.isNotEmpty()) {
-//                                        for (uri in uriList!!) {
-//                                            val bitmap =
-//                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                                                    ImageDecoder.decodeBitmap(
-//                                                        ImageDecoder.createSource(
-//                                                            context.contentResolver,
-//                                                            uri!!
-//                                                        )
-//                                                    )
-//                                                } else {
-//                                                    MediaStore.Images.Media.getBitmap(
-//                                                        context.contentResolver,
-//                                                        uri
-//                                                    )
-//                                                }
-//                                            Image(
-//                                                bitmap = bitmap.asImageBitmap(),
-//                                                contentDescription = "",
-//                                                modifier = Modifier
-//                                                    .size(100.dp)
-//                                                    .shadow(2.dp)
-//                                            )
-////                                            selectUris += uri!!
-//                                        }
-//                                    }
-//                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp)
+                                        .padding(20.dp)
+                                        .background(Color.Black)
+                                        .clickable {
+                                            if (!isGetImageEnabled) {
+                                                selectUris = uriList!!
+                                                isGetImageEnabled = true
+                                            }
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "이미지 가져오기", fontSize = 15.sp,
+                                        fontFamily = fontFamily(), color = Color.White
+                                    )
+                                }
                             }
                         }
                         TextField(
@@ -271,13 +278,20 @@ class EdittingPage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            Icon(painter = painterResource(id = R.drawable.image_icon),
+                            Icon(painter = painterResource(id = if (isGetImageEnabled) R.drawable.image_icon else R.drawable.image_search),
                                 contentDescription = "get image",
                                 modifier = Modifier
                                     .clickable {
-                                        selectUris = uriList!!
-                                        uriList = null
-                                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                        if (!isGetImageEnabled) {
+                                            selectUris = uriList!!
+                                            isGetImageEnabled = true
+                                        } else {
+                                            launcher.launch(
+                                                PickVisualMediaRequest(
+                                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                                )
+                                            )
+                                        }
                                     }
                                     .size(50.dp))
                             Icon(
