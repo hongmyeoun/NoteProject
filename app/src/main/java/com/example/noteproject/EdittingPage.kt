@@ -117,6 +117,15 @@ class EdittingPage : ComponentActivity() {
                     null
                 }
 
+//                var loadImageFaker by remember { mutableStateOf(true)}
+//                if (loadImageFaker){
+//                    Box(modifier = Modifier.fillMaxSize().clickable {
+//                        selectUris = uriList?: emptyList()
+//                        isGetImageEnabled = true
+//                        loadImageFaker = false
+//                    })
+//                }
+
                 Box {
                     Column {
                         Row(
@@ -219,13 +228,16 @@ class EdittingPage : ComponentActivity() {
                                                 modifier = Modifier
                                                     .size(100.dp)
                                                     .shadow(2.dp)
-                                                    .pointerInput(Unit) {
-                                                        detectTapGestures(
-                                                            onLongPress = {
-                                                                selectUris = selectUris - uri
-                                                            }
-                                                        )
+                                                    .clickable {
+                                                        selectUris = selectUris - uri
                                                     }
+//                                                    .pointerInput(Unit) {
+//                                                        detectTapGestures(
+//                                                            onLongPress = {
+//                                                                selectUris = selectUris - uri
+//                                                            }
+//                                                        )
+//                                                    }
                                             )
                                         }
                                     }
@@ -274,13 +286,16 @@ class EdittingPage : ComponentActivity() {
                                             modifier = Modifier
                                                 .size(100.dp)
                                                 .shadow(2.dp)
-                                                .pointerInput(Unit) {
-                                                    detectTapGestures(
-                                                        onLongPress = {
-                                                            selectUris = selectUris - uri
-                                                        }
-                                                    )
+                                                .clickable {
+                                                    selectUris = selectUris - uri
                                                 }
+//                                                .pointerInput(Unit) {
+//                                                    detectTapGestures(
+//                                                        onLongPress = {
+//                                                            selectUris = selectUris - uri
+//                                                        }
+//                                                    )
+//                                                }
                                         )
                                     }
                                 }

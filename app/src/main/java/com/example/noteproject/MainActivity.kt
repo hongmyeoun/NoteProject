@@ -201,7 +201,7 @@ class MainActivity : ComponentActivity() {
                                                                             bitmap = bitmap.asImageBitmap(),
                                                                             contentDescription = "",
                                                                             modifier = Modifier
-                                                                                .size(30.dp)
+                                                                                .size(33.dp)
                                                                                 .shadow(0.3.dp)
                                                                         )
                                                                     }

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -188,44 +189,38 @@ class NewNotePage : ComponentActivity() {
                         }
                         Divider()
                         LazyRow() {
-                            item {
-                                val removedUris = remember { mutableSetOf<Uri>() }
-                                if (selectUris.isNotEmpty()) {
-                                    for (uri in selectUris) {
-                                        if (uri in removedUris) {
-                                            continue
-                                        }
-                                        val bitmap =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                                ImageDecoder.decodeBitmap(
-                                                    ImageDecoder.createSource(
-                                                        context.contentResolver,
-                                                        uri!!
-                                                    )
-                                                )
-                                            } else {
-                                                MediaStore.Images.Media.getBitmap(
-                                                    context.contentResolver,
-                                                    uri
-                                                )
-                                            }
-                                        Image(
-                                            bitmap = bitmap.asImageBitmap(),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .shadow(2.dp)
-                                                .pointerInput(Unit) {
-                                                    detectTapGestures(
-                                                        onLongPress = {
-                                                            removedUris.add(uri!!)
-                                                            selectUris = selectUris - uri
-                                                        }
-                                                    )
-                                                }
+                            items(selectUris) { uri ->
+                                val bitmap =
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                        ImageDecoder.decodeBitmap(
+                                            ImageDecoder.createSource(
+                                                context.contentResolver,
+                                                uri!!
+                                            )
+                                        )
+                                    } else {
+                                        MediaStore.Images.Media.getBitmap(
+                                            context.contentResolver,
+                                            uri
                                         )
                                     }
-                                }
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .shadow(2.dp)
+                                        .clickable {
+                                            selectUris = selectUris - uri
+                                        }
+//                                                .pointerInput(Unit) {
+//                                                    detectTapGestures(
+//                                                        onLongPress = {
+//                                                            selectUris = selectUris - uri
+//                                                        }
+//                                                    )
+//                                                }
+                                )
                             }
                         }
                         TextField(
