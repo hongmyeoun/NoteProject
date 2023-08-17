@@ -231,13 +231,6 @@ class EdittingPage : ComponentActivity() {
                                                     .clickable {
                                                         selectUris = selectUris - uri
                                                     }
-//                                                    .pointerInput(Unit) {
-//                                                        detectTapGestures(
-//                                                            onLongPress = {
-//                                                                selectUris = selectUris - uri
-//                                                            }
-//                                                        )
-//                                                    }
                                             )
                                         }
                                     }
@@ -289,13 +282,6 @@ class EdittingPage : ComponentActivity() {
                                                 .clickable {
                                                     selectUris = selectUris - uri
                                                 }
-//                                                .pointerInput(Unit) {
-//                                                    detectTapGestures(
-//                                                        onLongPress = {
-//                                                            selectUris = selectUris - uri
-//                                                        }
-//                                                    )
-//                                                }
                                         )
                                     }
                                 }
@@ -308,9 +294,7 @@ class EdittingPage : ComponentActivity() {
                                 recognizedText = ""
                                 isRecognitionEnabled = true
                             },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable { isGetImageEnabled = true },
+                            modifier = Modifier.fillMaxSize(),
                             colors = TextFieldDefaults.textFieldColors(
                                 containerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,

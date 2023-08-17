@@ -104,7 +104,6 @@ class NewNotePage : ComponentActivity() {
                         }
                     }
                 }
-
                 Box {
                     Column {
                         Row(
@@ -213,13 +212,6 @@ class NewNotePage : ComponentActivity() {
                                         .clickable {
                                             selectUris = selectUris - uri
                                         }
-//                                                .pointerInput(Unit) {
-//                                                    detectTapGestures(
-//                                                        onLongPress = {
-//                                                            selectUris = selectUris - uri
-//                                                        }
-//                                                    )
-//                                                }
                                 )
                             }
                         }
@@ -260,7 +252,6 @@ class NewNotePage : ComponentActivity() {
                                         )
                                     }
                                     .size(50.dp))
-
                             Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
                                 contentDescription = "mic",
                                 modifier = Modifier
