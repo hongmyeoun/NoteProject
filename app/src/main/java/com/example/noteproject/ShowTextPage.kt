@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -30,8 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -137,37 +141,8 @@ class ShowTextPage : ComponentActivity() {
                         Spacer(modifier = Modifier.size(3.dp))
                     }
                     Divider()
-                    LazyRow() {
-                        item {
-                            if (!uriList.isNullOrEmpty()) {
-                                for (uri in uriList) {
-                                    if (uri != null) {
-                                        val bitmap =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                                ImageDecoder.decodeBitmap(
-                                                    ImageDecoder.createSource(
-                                                        context.contentResolver,
-                                                        uri
-                                                    )
-                                                )
-                                            } else {
-                                                MediaStore.Images.Media.getBitmap(
-                                                    context.contentResolver,
-                                                    uri
-                                                )
-                                            }
-                                        Image(
-                                            bitmap = bitmap.asImageBitmap(),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .shadow(2.dp)
-                                        )
-                                    }
-                                }
-
-                            }
-                        }
+                    if (!uriList.isNullOrEmpty()){
+                        ExpandableImageRow(uriList)
                     }
                     LazyColumn() {
                         item {
@@ -218,4 +193,45 @@ fun TTSComponent(text: String, tts: TextToSpeech) {
                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
             }
     )
+}
+
+@Composable
+fun ExpandableImageRow(uriList: List<Uri?>) {
+    var expandedIndex by remember { mutableStateOf(-1) }
+
+    LazyRow(modifier=Modifier.padding(3.dp)) {
+        itemsIndexed(uriList) { index, uri ->
+            if (uri != null) {
+
+                val isExpanded = index == expandedIndex
+
+                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(
+                            LocalContext.current.contentResolver,
+                            uri
+                        )
+                    )
+                } else {
+                    MediaStore.Images.Media.getBitmap(
+                        LocalContext.current.contentResolver,
+                        uri
+                    )
+                }
+
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "",
+                    modifier = Modifier
+//                        .padding(4.dp)
+                        .size(if (isExpanded) 410.dp else 100.dp)
+                        .padding(2.dp)  // Add padding between images
+                        .shadow(1.dp)
+                        .clickable {
+                            expandedIndex = if (isExpanded) -1 else index
+                        }
+                )
+            }
+        }
+    }
 }
