@@ -13,16 +13,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,10 +27,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -76,7 +70,6 @@ class EdittingPage : ComponentActivity() {
 
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
-                var isGetImageEnabled by remember { mutableStateOf(false) }
 
                 val foundNote2 = noteList.find { it.uid == targetUid }
 
@@ -86,7 +79,6 @@ class EdittingPage : ComponentActivity() {
                         selectedUrisList?.map { uriString -> Uri.parse(uriString) }
                     mutableStateOf<List<Uri?>>(uriList ?: emptyList())
                 }
-
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickMultipleVisualMedia(),
                     onResult = { uris ->
@@ -104,7 +96,6 @@ class EdittingPage : ComponentActivity() {
                 } else {
                     null
                 }
-
                 Box {
                     Column {
                         Row(
@@ -139,181 +130,77 @@ class EdittingPage : ComponentActivity() {
                                 ),
                                 modifier = Modifier.weight(1f),
                             )
-                            Icon(painter = painterResource(
-                                id =
-//                                if (isRecognitionEnabled && isGetImageEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24
-                                if (isRecognitionEnabled) {
-                                    if (isGetImageEnabled) {
-                                        R.drawable.baseline_save_24
-                                    } else {
-                                        R.drawable.baseline_not_interested_24
-                                    }
-                                } else {
-                                    R.drawable.baseline_save_24
-                                }
-                            ),
+                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
                                 contentDescription = "Save",
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .size(height = 30.dp, width = 40.dp)
                                     .clickable(enabled = isRecognitionEnabled) {
-                                        if (!isGetImageEnabled) {
-//                                            selectUris = uriList ?: emptyList()
-//                                            isGetImageEnabled = true
-                                        } else {
-                                            if (uriStringList != null) {
-                                                scope.launch(Dispatchers.IO) {
-                                                    foundNote2?.title = editNoteTitle
-                                                    foundNote2?.script = editNoteText
-                                                    foundNote2?.imageListString = uriStringList
-                                                    if (foundNote2 != null) {
-                                                        db
-                                                            .noteDao()
-                                                            .update(foundNote2)
-                                                    }
+                                        if (uriStringList != null) {
+                                            scope.launch(Dispatchers.IO) {
+                                                foundNote2?.title = editNoteTitle
+                                                foundNote2?.script = editNoteText
+                                                foundNote2?.imageListString = uriStringList
+                                                if (foundNote2 != null) {
+                                                    db
+                                                        .noteDao()
+                                                        .update(foundNote2)
                                                 }
-                                                val intent =
-                                                    Intent(context, ShowTextPage::class.java)
-                                                intent.putExtra("Uid", foundNote2!!.uid)
-                                                startActivity(intent)
-                                            } else {
-                                                scope.launch(Dispatchers.IO) {
-                                                    foundNote2?.title = editNoteTitle
-                                                    foundNote2?.script = editNoteText
-                                                    foundNote2?.imageListString = null
-                                                    if (foundNote2 != null) {
-                                                        db
-                                                            .noteDao()
-                                                            .update(foundNote2)
-                                                    }
-                                                }
-                                                val intent =
-                                                    Intent(context, ShowTextPage::class.java)
-                                                intent.putExtra("Uid", foundNote2!!.uid)
-                                                startActivity(intent)
                                             }
+                                            val intent =
+                                                Intent(context, ShowTextPage::class.java)
+                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            startActivity(intent)
+                                        } else {
+                                            scope.launch(Dispatchers.IO) {
+                                                foundNote2?.title = editNoteTitle
+                                                foundNote2?.script = editNoteText
+                                                foundNote2?.imageListString = null
+                                                if (foundNote2 != null) {
+                                                    db
+                                                        .noteDao()
+                                                        .update(foundNote2)
+                                                }
+                                            }
+                                            val intent =
+                                                Intent(context, ShowTextPage::class.java)
+                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            startActivity(intent)
                                         }
-
                                     }
 
-//                                    .clickable(enabled = isRecognitionEnabled && isGetImageEnabled) {
-//                                        if (uriStringList != null) {
-//                                            scope.launch(Dispatchers.IO) {
-//                                                foundNote2?.title = editNoteTitle
-//                                                foundNote2?.script = editNoteText
-//                                                foundNote2?.imageListString = uriStringList
-//                                                if (foundNote2 != null) {
-//                                                    db
-//                                                        .noteDao()
-//                                                        .update(foundNote2)
-//                                                }
-//                                            }
-//                                            val intent = Intent(context, ShowTextPage::class.java)
-//                                            intent.putExtra("Uid", foundNote2!!.uid)
-//                                            startActivity(intent)
-//                                        } else {
-//                                            scope.launch(Dispatchers.IO) {
-//                                                foundNote2?.title = editNoteTitle
-//                                                foundNote2?.script = editNoteText
-//                                                foundNote2?.imageListString = null
-//                                                if (foundNote2 != null) {
-//                                                    db
-//                                                        .noteDao()
-//                                                        .update(foundNote2)
-//                                                }
-//                                            }
-//                                            val intent = Intent(context, ShowTextPage::class.java)
-//                                            intent.putExtra("Uid", foundNote2!!.uid)
-//                                            startActivity(intent)
-//                                        }
-//
-//                                    }
                             )
                         }
                         Divider()
                         Column {
-//                            if (selectedUrisList == null) {
-                                LazyRow() {
-                                    items(selectUris) { uri ->
-                                        val bitmap =
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                                ImageDecoder.decodeBitmap(
-                                                    ImageDecoder.createSource(
-                                                        context.contentResolver,
-                                                        uri!!
-                                                    )
-                                                )
-                                            } else {
-                                                MediaStore.Images.Media.getBitmap(
+                            LazyRow() {
+                                items(selectUris) { uri ->
+                                    val bitmap =
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                            ImageDecoder.decodeBitmap(
+                                                ImageDecoder.createSource(
                                                     context.contentResolver,
-                                                    uri
+                                                    uri!!
                                                 )
+                                            )
+                                        } else {
+                                            MediaStore.Images.Media.getBitmap(
+                                                context.contentResolver,
+                                                uri
+                                            )
+                                        }
+                                    Image(
+                                        bitmap = bitmap.asImageBitmap(),
+                                        contentDescription = "",
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .shadow(2.dp)
+                                            .clickable {
+                                                selectUris = selectUris - uri
                                             }
-                                        Image(
-                                            bitmap = bitmap.asImageBitmap(),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .size(100.dp)
-                                                .shadow(2.dp)
-                                                .clickable {
-                                                    selectUris = selectUris - uri
-                                                }
-                                        )
-                                    }
+                                    )
                                 }
-//                            } else {
-//                                if (isGetImageEnabled) {
-//                                    LazyRow() {
-//                                        items(selectUris) { uri ->
-//                                            val bitmap =
-//                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                                                    ImageDecoder.decodeBitmap(
-//                                                        ImageDecoder.createSource(
-//                                                            context.contentResolver,
-//                                                            uri!!
-//                                                        )
-//                                                    )
-//                                                } else {
-//                                                    MediaStore.Images.Media.getBitmap(
-//                                                        context.contentResolver,
-//                                                        uri
-//                                                    )
-//                                                }
-//                                            Image(
-//                                                bitmap = bitmap.asImageBitmap(),
-//                                                contentDescription = "",
-//                                                modifier = Modifier
-//                                                    .size(100.dp)
-//                                                    .shadow(2.dp)
-//                                                    .clickable {
-//                                                        selectUris = selectUris - uri
-//                                                    }
-//                                            )
-//                                        }
-//                                    }
-//                                } else {
-//                                    Row(
-//                                        modifier = Modifier
-//                                            .fillMaxWidth()
-//                                            .height(100.dp)
-//                                            .padding(20.dp)
-//                                            .background(Color.Black)
-//                                            .clickable {
-//                                                if (!isGetImageEnabled) {
-//                                                    selectUris = uriList!!
-//                                                    isGetImageEnabled = true
-//                                                }
-//                                            },
-//                                        verticalAlignment = Alignment.CenterVertically,
-//                                        horizontalArrangement = Arrangement.Center
-//                                    ) {
-//                                        Text(
-//                                            text = "이미지 가져오기(없어도 한번만)", fontSize = 15.sp,
-//                                            fontFamily = fontFamily(), color = Color.White
-//                                        )
-//                                    }
-//                                }
-//                            }
+                            }
                         }
                         TextField(
                             value = editNoteText + recognizedText,
@@ -345,7 +232,8 @@ class EdittingPage : ComponentActivity() {
                         ) { result ->
                             if (result.resultCode == RESULT_OK) {
                                 val data: Intent? = result.data
-                                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                                val results =
+                                    data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                                 if (!results.isNullOrEmpty()) {
                                     recognizedText = " " + results[0]
                                     isRecognitionEnabled = false
@@ -354,19 +242,15 @@ class EdittingPage : ComponentActivity() {
                         }
 
                         Column {
-                            Icon(painter = painterResource(id = R.drawable.image_icon), contentDescription = "get image",
+                            Icon(painter = painterResource(id = R.drawable.image_icon),
+                                contentDescription = "get image",
                                 modifier = Modifier
                                     .clickable {
-                                        if (!isGetImageEnabled) {
-//                                            selectUris = uriList!!
-//                                            isGetImageEnabled = true
-                                        } else {
-                                            launcher.launch(
-                                                PickVisualMediaRequest(
-                                                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                                                )
+                                        launcher.launch(
+                                            PickVisualMediaRequest(
+                                                ActivityResultContracts.PickVisualMedia.ImageOnly
                                             )
-                                        }
+                                        )
                                     }
                                     .size(50.dp))
                             Icon(
