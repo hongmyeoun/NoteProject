@@ -81,7 +81,6 @@ class MainActivity : ComponentActivity() {
 
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
-
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
 
                 var deletPressed by remember { mutableStateOf(false) }
@@ -95,19 +94,7 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Spacer(modifier = Modifier.size(50.dp))
-                        Text(
-                            text = "나의 노트",
-                            fontSize = 50.sp,
-                            fontFamily = fontFamily()
-                        )
-                        Text(
-                            text = "노트 ${noteList.size}개",
-                            fontWeight = FontWeight.Light,
-                            fontSize = 10.sp,
-                            fontFamily = fontFamily()
-                        )
-                        Spacer(modifier = Modifier.size(50.dp))
+                        NoteTopLayout(noteList)
 
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -136,8 +123,7 @@ class MainActivity : ComponentActivity() {
                                                                 ShowTextPage::class.java
                                                             )
                                                             intent.putExtra("Uid", note.uid)
-                                                            context.startActivity(intent)
-                                                        },
+                                                            context.startActivity(intent)                                                        },
                                                         onLongPress = {
                                                             deletPressed = true
                                                             deletingNote = note // 삭제될 노트 저장
@@ -166,40 +152,9 @@ class MainActivity : ComponentActivity() {
                                                     )
                                                 }
                                             }
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(height = 170.dp, width = 120.dp)
-                                                    .shadow(
-                                                        0.3f.dp,
-                                                        shape = RoundedCornerShape(1.dp)
-                                                    )
-                                                    .padding(10.dp)
-                                            ) {
-                                                Column {
-                                                    ShowDBImage(note, context)
-                                                    Text(
-                                                        text = note.script!!,
-                                                        fontFamily = fontFamily(),
-                                                        fontSize = 12.sp
-                                                    )
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "${note.title}",
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                fontFamily = fontFamily(),
-                                                fontSize = 20.sp
-                                            )
-                                            Text(
-                                                text = "${note.createdDate}",
-                                                fontWeight = FontWeight.Light,
-                                                fontSize = 10.sp,
-                                                color = Color.LightGray,
-                                                fontFamily = fontFamily()
-                                            )
-                                            Spacer(modifier = Modifier.height(20.dp))
+                                            NoteBox(note, context)
+                                            NoteTitle(note)
+                                            NoteDate(note)
                                         }
                                     }
                                 }
@@ -212,23 +167,96 @@ class MainActivity : ComponentActivity() {
                             .padding(end = 30.dp, bottom = 50.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.note_add),
-                            contentDescription = "newNote",
-                            modifier = Modifier
-                                .clickable {
-                                    val intent = Intent(context, NewNotePage::class.java)
-                                    context.startActivity(intent)
-                                }
-                                .size(50.dp)
-                        )
+                        NewNoteAction(context)
                     }
                 }
             }
         }
     }
-
 }
+
+@Composable
+private fun NewNoteAction(context: Context) {
+    Icon(
+        painter = painterResource(id = R.drawable.note_add),
+        contentDescription = "newNote",
+        modifier = Modifier
+            .clickable {
+                val intent = Intent(context, NewNotePage::class.java)
+                context.startActivity(intent)
+            }
+            .size(50.dp)
+    )
+}
+
+@Composable
+private fun NoteBox(note: Note, context: Context) {
+    Box(
+        modifier = Modifier
+            .size(height = 170.dp, width = 120.dp)
+            .shadow(
+                0.3f.dp,
+                shape = RoundedCornerShape(1.dp)
+            )
+            .padding(10.dp)
+    ) {
+        NoteScript(note, context)
+    }
+}
+
+@Composable
+private fun NoteDate(note: Note) {
+    Text(
+        text = "${note.createdDate}",
+        fontWeight = FontWeight.Light,
+        fontSize = 10.sp,
+        color = Color.LightGray,
+        fontFamily = fontFamily()
+    )
+    Spacer(modifier = Modifier.height(20.dp))
+}
+
+@Composable
+private fun NoteTitle(note: Note) {
+    Spacer(modifier = Modifier.height(2.dp))
+    Text(
+        text = "${note.title}",
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        fontFamily = fontFamily(),
+        fontSize = 20.sp
+    )
+}
+
+@Composable
+private fun NoteScript(note: Note, context: Context) {
+    Column {
+        ShowDBImage(note, context)
+        Text(
+            text = note.script!!,
+            fontFamily = fontFamily(),
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun NoteTopLayout(noteList: List<Note>) {
+    Spacer(modifier = Modifier.size(50.dp))
+    Text(
+        text = "나의 노트",
+        fontSize = 50.sp,
+        fontFamily = fontFamily()
+    )
+    Text(
+        text = "노트 ${noteList.size}개",
+        fontWeight = FontWeight.Light,
+        fontSize = 10.sp,
+        fontFamily = fontFamily()
+    )
+    Spacer(modifier = Modifier.size(50.dp))
+}
+
 @Composable
 private fun ShowDBImage(note: Note, context: Context) {
     val selectedUrisList = note.imageListString
