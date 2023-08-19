@@ -59,6 +59,8 @@ class EdittingPage : ComponentActivity() {
             NoteProjectTheme {
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
+                //엑티비티가 이동되면서 데이터를 로드하는데 그과정에서 처음에 noteList는 emptylist값을 갖고 있고 데이터가 안들어옴
+                //그러면서 밑의 코드들이 작동
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 val targetUid = intent.getIntExtra("Uid", 0)
                 val title = intent.getStringExtra("title") ?: "제목"
@@ -71,8 +73,14 @@ class EdittingPage : ComponentActivity() {
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
 
+                //데이터가 로드되지 않은 상태에서 noteList에 uid를 찾기 때문에 foundNote2는 null이 됨
                 val foundNote2 = noteList.find { it.uid == targetUid }
 
+                //foundNote2는 null이기 때문에 uriList는 결과적으로 emptyList값으로 처음에 저장됨
+                //그러나 데이터가 로드된 이후에는 noteList가 db에 값을 가져오게 되면서 foundNote2값에 변동이 생김
+                //remember(key)는 키값에 변경이있을시 람다식 내부의 식을 한번 돌려주는 스코프임
+                //그러므로 foundNote2에 값이 변동되었을때 람다식이 발동하면서 selectUris값이 바뀌게 됨
+                //그이후 코드동작에서 또한번 foundNote2값이 변동이되면 selectUris값이 변동될것임.
                 var selectUris by remember(foundNote2) {
                     val selectedUrisList = foundNote2?.imageListString
                     val uriList: List<Uri?>? =
@@ -87,7 +95,9 @@ class EdittingPage : ComponentActivity() {
                         //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
                         for (uri in selectUris) {
                             val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            context.contentResolver.takePersistableUriPermission(uri!!, flag)
+                            if (uri != null){
+                                context.contentResolver.takePersistableUriPermission(uri, flag)
+                            }
                         }
                     }
                 )
@@ -162,8 +172,7 @@ class EdittingPage : ComponentActivity() {
                                                         .update(foundNote2)
                                                 }
                                             }
-                                            val intent =
-                                                Intent(context, ShowTextPage::class.java)
+                                            val intent = Intent(context, ShowTextPage::class.java)
                                             intent.putExtra("Uid", foundNote2!!.uid)
                                             startActivity(intent)
                                         }

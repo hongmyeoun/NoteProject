@@ -1,6 +1,7 @@
 package com.example.noteproject
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -78,9 +80,10 @@ class MainActivity : ComponentActivity() {
             NoteProjectTheme {
 
                 val context = LocalContext.current
-
                 val db = remember { NoteAppDatabase.getDatabase(context) }
+
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
+
                 var deletPressed by remember { mutableStateOf(false) }
                 var deletingNote by remember { mutableStateOf<Note?>(null) }
 
@@ -172,44 +175,8 @@ class MainActivity : ComponentActivity() {
                                                     )
                                                     .padding(10.dp)
                                             ) {
-                                                val selectedUrisList = note.imageListString
-                                                val uriList: List<Uri?>? =
-                                                    selectedUrisList?.map { uriString ->
-                                                        Uri.parse(uriString)
-                                                    }
                                                 Column {
-                                                    LazyRow() {
-                                                        item {
-                                                            if (!uriList.isNullOrEmpty()) {
-                                                                for (uri in uriList) {
-                                                                    if (uri != null) {
-                                                                        val bitmap =
-                                                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                                                                ImageDecoder.decodeBitmap(
-                                                                                    ImageDecoder.createSource(
-                                                                                        context.contentResolver,
-                                                                                        uri
-                                                                                    )
-                                                                                )
-                                                                            } else {
-                                                                                MediaStore.Images.Media.getBitmap(
-                                                                                    context.contentResolver,
-                                                                                    uri
-                                                                                )
-                                                                            }
-                                                                        Image(
-                                                                            bitmap = bitmap.asImageBitmap(),
-                                                                            contentDescription = "",
-                                                                            modifier = Modifier
-                                                                                .size(33.dp)
-                                                                                .shadow(0.3.dp)
-                                                                        )
-                                                                    }
-                                                                }
-
-                                                            }
-                                                        }
-                                                    }
+                                                    ShowDBImage(note, context)
                                                     Text(
                                                         text = note.script!!,
                                                         fontFamily = fontFamily(),
@@ -256,6 +223,44 @@ class MainActivity : ComponentActivity() {
                                 .size(50.dp)
                         )
                     }
+                }
+            }
+        }
+    }
+
+}
+@Composable
+private fun ShowDBImage(note: Note, context: Context) {
+    val selectedUrisList = note.imageListString
+    val uriList: List<Uri?>? =
+        selectedUrisList?.map { uriString ->
+            Uri.parse(uriString)
+        }
+    LazyRow() {
+        if (!uriList.isNullOrEmpty()) {
+            items(uriList) { uri ->
+                if (uri != null) {
+                    val bitmap =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            ImageDecoder.decodeBitmap(
+                                ImageDecoder.createSource(
+                                    context.contentResolver,
+                                    uri
+                                )
+                            )
+                        } else {
+                            MediaStore.Images.Media.getBitmap(
+                                context.contentResolver,
+                                uri
+                            )
+                        }
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "",
+                        modifier = Modifier
+                            .size(33.dp)
+                            .shadow(0.3.dp)
+                    )
                 }
             }
         }

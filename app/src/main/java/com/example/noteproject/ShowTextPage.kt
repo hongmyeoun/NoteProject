@@ -222,9 +222,8 @@ fun ExpandableImageRow(uriList: List<Uri?>) {
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = "",
                     modifier = Modifier
-//                        .padding(4.dp)
                         .size(if (isExpanded) 410.dp else 100.dp)
-                        .padding(2.dp)  // Add padding between images
+                        .padding(2.dp)
                         .shadow(1.dp)
                         .clickable {
                             expandedIndex = if (isExpanded) -1 else index
