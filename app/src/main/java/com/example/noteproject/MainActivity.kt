@@ -1,8 +1,10 @@
 package com.example.noteproject
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -55,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.noteproject.data.Note
@@ -101,46 +104,58 @@ class MainActivity : ComponentActivity() {
                     ) {
                         NoteTopLayout(noteList)
 
-                        var ascendingOrder by remember { mutableStateOf(true) }
-                        var sortOption by remember { mutableStateOf(SortOption.TITLE) }
+                        val activity = LocalContext.current as? Activity
+                        val sharedPref = remember { activity?.getPreferences(Context.MODE_PRIVATE) }
+                        var upSort by remember {
+                            val upSortValue = sharedPref?.getBoolean("upSort", true) ?: true
+                            mutableStateOf(upSortValue)
+                        }
+                        var sortOption by remember {
+                            val sortOptionValue = sharedPref?.getString("sortOption", SortOption.TITLE.name) ?: SortOption.TITLE.name
+                            mutableStateOf(sortOptionValue)
+                        }
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             val sortedNoteList = when (sortOption) {
-                                SortOption.TITLE -> if (ascendingOrder) {
+                                SortOption.TITLE.name -> if (upSort) {
                                     noteList.sortedBy { it.title }
                                 } else {
                                     noteList.sortedByDescending { it.title }
                                 }
 
-                                SortOption.CREATED_DATE -> if (ascendingOrder) {
+                                else -> if (upSort) {
                                     noteList.sortedBy { it.createdDate }
                                 } else {
                                     noteList.sortedByDescending { it.createdDate }
                                 }
                             }
                             item {
-                                Row {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                     Button(
                                         onClick = {
                                             sortOption = when (sortOption) {
-                                                SortOption.TITLE -> SortOption.CREATED_DATE
-                                                SortOption.CREATED_DATE -> SortOption.TITLE
+                                                SortOption.TITLE.name -> SortOption.CREATED_DATE.name
+                                                else -> SortOption.TITLE.name
                                             }
+                                            titleAndTimeSortEdit(sharedPref, sortOption)
                                         }
                                     ) {
                                         Text(
                                             when (sortOption) {
-                                                SortOption.TITLE -> "제목순"
-                                                SortOption.CREATED_DATE -> "날짜순"
+                                                SortOption.TITLE.name -> "제목순"
+                                                else -> "날짜순"
                                             }
                                         )
                                     }
                                     Button(
-                                        onClick = { ascendingOrder = !ascendingOrder }
+                                        onClick = {
+                                            upSort = !upSort
+                                            upAndDownSortEdit(sharedPref, upSort)
+                                        }
                                     ) {
-                                        Text(if (ascendingOrder) "오름차순" else "내림차순")
+                                        Text(if (upSort) "오름차순" else "내림차순")
                                     }
 
                                 }
@@ -219,6 +234,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+fun upAndDownSortEdit(sharedPref: SharedPreferences?, sort: Boolean) {
+    sharedPref?.edit {
+        putBoolean("upSort", sort)
+    }
+}
+
+fun titleAndTimeSortEdit(sharedPref: SharedPreferences?, sort: String) {
+    sharedPref?.edit {
+        putString("sortOption", sort)
     }
 }
 
