@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -111,7 +110,9 @@ class MainActivity : ComponentActivity() {
                             mutableStateOf(upSortValue)
                         }
                         var sortOption by remember {
-                            val sortOptionValue = sharedPref?.getString("sortOption", SortOption.TITLE.name) ?: SortOption.TITLE.name
+                            val sortOptionValue =
+                                sharedPref?.getString("sortOption", SortOption.TITLE.name)
+                                    ?: SortOption.TITLE.name
                             mutableStateOf(sortOptionValue)
                         }
                         LazyColumn(
@@ -132,16 +133,21 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             item {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                    Button(
-                                        onClick = {
-                                            sortOption = when (sortOption) {
-                                                SortOption.TITLE.name -> SortOption.CREATED_DATE.name
-                                                else -> SortOption.TITLE.name
-                                            }
-                                            titleAndTimeSortEdit(sharedPref, sortOption)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Row(modifier = Modifier.clickable {
+                                        sortOption = when (sortOption) {
+                                            SortOption.TITLE.name -> SortOption.CREATED_DATE.name
+                                            else -> SortOption.TITLE.name
                                         }
-                                    ) {
+                                        titleAndTimeSortEdit(sharedPref, sortOption)
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.sort),
+                                            contentDescription = "Sort by title or time"
+                                        )
                                         Text(
                                             when (sortOption) {
                                                 SortOption.TITLE.name -> "제목순"
@@ -149,15 +155,14 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                     }
-                                    Button(
-                                        onClick = {
+                                    Spacer(modifier = Modifier.size(3.dp))
+                                    Icon(painter = painterResource(id = if (upSort) R.drawable.arrow_upward else R.drawable.baseline_arrow_downward_24),
+                                        contentDescription = "Sort by up or down",
+                                        modifier = Modifier.clickable {
                                             upSort = !upSort
                                             upAndDownSortEdit(sharedPref, upSort)
                                         }
-                                    ) {
-                                        Text(if (upSort) "오름차순" else "내림차순")
-                                    }
-
+                                    )
                                 }
                             }
 
