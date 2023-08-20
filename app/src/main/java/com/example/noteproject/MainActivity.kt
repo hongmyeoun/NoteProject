@@ -52,10 +52,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -65,6 +67,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -528,7 +531,9 @@ private fun NoteTitle(note: Note) {
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         fontFamily = fontFamily(),
-        fontSize = 20.sp
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.Bold
     )
 }
 
@@ -553,7 +558,9 @@ private fun SearchingTitle(note: Note, searchText: String) {
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         fontFamily = fontFamily(),
-        fontSize = 20.sp
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.Bold
     )
 }
 
@@ -598,7 +605,7 @@ private fun SearchingScript(note: Note, context: Context, searchText: String) {
 private fun NoteTopLayout(noteList: List<Note>) {
     Spacer(modifier = Modifier.size(50.dp))
     Text(
-        text = "나의 노트",
+        text = "나의 메모장",
         fontSize = 50.sp,
         fontFamily = fontFamily()
     )
@@ -641,7 +648,6 @@ private fun ShowDBImage(note: Note, context: Context) {
                         contentDescription = "",
                         modifier = Modifier
                             .size(33.dp)
-                            .shadow(0.3.dp)
                     )
                 }
             }

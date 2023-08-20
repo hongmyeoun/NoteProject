@@ -206,7 +206,6 @@ class NewNotePage : ComponentActivity() {
                                     contentDescription = "",
                                     modifier = Modifier
                                         .size(100.dp)
-                                        .shadow(2.dp)
                                         .clickable {
                                             selectUris = selectUris - uri
                                         }

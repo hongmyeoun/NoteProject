@@ -1,5 +1,6 @@
 package com.example.noteproject
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -39,14 +40,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -89,17 +93,7 @@ class ShowTextPage : ComponentActivity() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.back),
-                            contentDescription = "Back Button",
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .size(40.dp)
-                                .clickable {
-                                    val intent = Intent(context, MainActivity::class.java)
-                                    context.startActivity(intent)
-                                }
-                        )
+                        BackIconButton(context)
                         Text(
                             text = foundNote?.title ?: "제목",
                             fontWeight = FontWeight.Bold,
@@ -112,74 +106,110 @@ class ShowTextPage : ComponentActivity() {
                         if (foundNote != null) {
                             TTSComponent(foundNote.script!!, textToSpeech)
                         }
-                        Spacer(modifier = Modifier.size(3.dp))
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "edit",
-                            modifier = Modifier.clickable {
-                                val intent = Intent(context, EdittingPage::class.java)
-                                intent.putExtra("Uid", foundNote!!.uid)
-                                intent.putExtra("title", foundNote.title)
-                                intent.putExtra("script", foundNote.script)
-                                context.startActivity(intent)
-                            })
-                        Spacer(modifier = Modifier.size(3.dp))
-                        Icon(
-                            painter = painterResource(id = R.drawable.delete),
-                            contentDescription = "Delete",
-                            modifier = Modifier
-                                .clickable {
-                                    scope.launch(Dispatchers.IO) {
-                                        db
-                                            .noteDao()
-                                            .delete(foundNote!!) // 선택한 노트를 삭제
-                                    }
-                                    val intent = Intent(context, MainActivity::class.java)
-                                    context.startActivity(intent)
-                                })
-                        Spacer(modifier = Modifier.size(3.dp))
+                        EditIconButton(context, foundNote)
+                        DeleteIconButton(scope, db, foundNote, context)
                     }
                     Divider()
-                    if (!uriList.isNullOrEmpty()){
+                    if (!uriList.isNullOrEmpty()) {
                         ExpandableImageRow(uriList)
                     }
-                    LazyColumn() {
-                        item {
-                            if (foundNote?.script != null) {
-                                SelectionContainer {
-                                    Text(
-                                        text = foundNote.script ?: "",
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(15.dp),
-                                        fontFamily = fontFamily(),
-                                        fontSize = 15.sp
-                                    )
-                                }
-                            } else {
-                                SelectionContainer {
-                                    Text(
-                                        text = "내용이없음",
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(15.dp),
-                                        fontFamily = fontFamily(),
-                                        fontSize = 15.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    ShowNoteScript(foundNote)
                 }
             }
         }
     }
-
     override fun onDestroy() {
         super.onDestroy()
         textToSpeech.stop()
         textToSpeech.shutdown()
     }
+}
+@Composable
+private fun ShowNoteScript(foundNote: Note?) {
+    LazyColumn() {
+        item {
+            if (foundNote?.script != null) {
+                SelectionContainer {
+                    Text(
+                        text = foundNote.script ?: "",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(15.dp),
+                        fontFamily = fontFamily(),
+                        fontSize = 15.sp
+                    )
+                }
+            } else {
+                SelectionContainer {
+                    Text(
+                        text = "내용이없음",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(15.dp),
+                        fontFamily = fontFamily(),
+                        fontSize = 15.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteIconButton(
+    scope: CoroutineScope,
+    db: NoteAppDatabase,
+    foundNote: Note?,
+    context: Context
+) {
+    Icon(
+        painter = painterResource(id = R.drawable.delete),
+        contentDescription = "Delete",
+        modifier = Modifier
+            .clickable {
+                scope.launch(Dispatchers.IO) {
+                    db
+                        .noteDao()
+                        .delete(foundNote!!) // 선택한 노트를 삭제
+                }
+                val intent = Intent(context, MainActivity::class.java)
+                context.startActivity(intent)
+            })
+    Spacer(modifier = Modifier.size(3.dp))
+}
+
+@Composable
+private fun EditIconButton(
+    context: Context,
+    foundNote: Note?
+) {
+    Icon(
+        imageVector = Icons.Default.Edit,
+        contentDescription = "edit",
+        modifier = Modifier.clickable {
+            val intent = Intent(context, EdittingPage::class.java)
+            intent.putExtra("Uid", foundNote!!.uid)
+            intent.putExtra("title", foundNote.title)
+            intent.putExtra("script", foundNote.script)
+            context.startActivity(intent)
+        })
+    Spacer(modifier = Modifier.size(3.dp))
+
+}
+
+@Composable
+private fun BackIconButton(context: Context) {
+    Icon(
+        painter = painterResource(id = R.drawable.back),
+        contentDescription = "Back Button",
+        modifier = Modifier
+            .padding(10.dp)
+            .size(40.dp)
+            .clickable {
+                val intent = Intent(context, MainActivity::class.java)
+                context.startActivity(intent)
+            }
+    )
 }
 
 @Composable
@@ -192,13 +222,14 @@ fun TTSComponent(text: String, tts: TextToSpeech) {
                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
             }
     )
+    Spacer(modifier = Modifier.size(3.dp))
 }
 
 @Composable
 fun ExpandableImageRow(uriList: List<Uri?>) {
     var expandedIndex by remember { mutableStateOf(-1) }
 
-    LazyRow(modifier=Modifier.padding(3.dp)) {
+    LazyRow(modifier = Modifier.padding(3.dp)) {
         itemsIndexed(uriList) { index, uri ->
             if (uri != null) {
 
@@ -224,7 +255,6 @@ fun ExpandableImageRow(uriList: List<Uri?>) {
                     modifier = Modifier
                         .size(if (isExpanded) 410.dp else 100.dp)
                         .padding(2.dp)
-                        .shadow(1.dp)
                         .clickable {
                             expandedIndex = if (isExpanded) -1 else index
                         }
