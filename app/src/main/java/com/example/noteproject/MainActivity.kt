@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +62,10 @@ import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -96,13 +101,54 @@ class MainActivity : ComponentActivity() {
                     ) {
                         NoteTopLayout(noteList)
 
+                        var ascendingOrder by remember { mutableStateOf(true) }
+                        var sortOption by remember { mutableStateOf(SortOption.TITLE) }
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
+                            val sortedNoteList = when (sortOption) {
+                                SortOption.TITLE -> if (ascendingOrder) {
+                                    noteList.sortedBy { it.title }
+                                } else {
+                                    noteList.sortedByDescending { it.title }
+                                }
+
+                                SortOption.CREATED_DATE -> if (ascendingOrder) {
+                                    noteList.sortedBy { it.createdDate }
+                                } else {
+                                    noteList.sortedByDescending { it.createdDate }
+                                }
+                            }
+                            item {
+                                Row {
+                                    Button(
+                                        onClick = {
+                                            sortOption = when (sortOption) {
+                                                SortOption.TITLE -> SortOption.CREATED_DATE
+                                                SortOption.CREATED_DATE -> SortOption.TITLE
+                                            }
+                                        }
+                                    ) {
+                                        Text(
+                                            when (sortOption) {
+                                                SortOption.TITLE -> "제목순"
+                                                SortOption.CREATED_DATE -> "날짜순"
+                                            }
+                                        )
+                                    }
+                                    Button(
+                                        onClick = { ascendingOrder = !ascendingOrder }
+                                    ) {
+                                        Text(if (ascendingOrder) "오름차순" else "내림차순")
+                                    }
+
+                                }
+                            }
+
                             val columns = 3 // 열 개수
 
-                            val chunkedNoteList = noteList.chunked(columns)
+                            val chunkedNoteList = sortedNoteList.chunked(columns)
 
                             items(chunkedNoteList.size) { rowIndex ->
                                 Row(
@@ -123,7 +169,8 @@ class MainActivity : ComponentActivity() {
                                                                 ShowTextPage::class.java
                                                             )
                                                             intent.putExtra("Uid", note.uid)
-                                                            context.startActivity(intent)                                                        },
+                                                            context.startActivity(intent)
+                                                        },
                                                         onLongPress = {
                                                             deletPressed = true
                                                             deletingNote = note // 삭제될 노트 저장
@@ -175,6 +222,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+enum class SortOption {
+    TITLE, CREATED_DATE
+}
+
 @Composable
 private fun NewNoteAction(context: Context) {
     Icon(
@@ -206,14 +257,49 @@ private fun NoteBox(note: Note, context: Context) {
 
 @Composable
 private fun NoteDate(note: Note) {
+    val currentDate = Date()
+    val dateUtils = DateUtils()
+    val noteDate = dateUtils.stringToDate(note.createdDate)
+    val formattedDate = if (dateUtils.isToday(noteDate)) {
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(noteDate) // 오늘이면 HH:mm 형식
+    } else if (dateUtils.isSameYear(noteDate, currentDate)) {
+        SimpleDateFormat("MM.dd", Locale.getDefault()).format(noteDate) // 같은 해이면 MM.dd 형식
+    } else {
+        SimpleDateFormat("yy.MM.dd", Locale.getDefault()).format(noteDate) // 다른 해면 yy.MM.dd 형식
+    }
+
     Text(
-        text = "${note.createdDate}",
+        text = formattedDate,
         fontWeight = FontWeight.Light,
         fontSize = 10.sp,
         color = Color.LightGray,
         fontFamily = fontFamily()
     )
     Spacer(modifier = Modifier.height(20.dp))
+}
+
+class DateUtils {
+    fun isSameYear(date1: Date, date2: Date): Boolean {
+        val cal1 = Calendar.getInstance()
+        val cal2 = Calendar.getInstance()
+        cal1.time = date1
+        cal2.time = date2
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)
+    }
+
+    fun stringToDate(dateString: String): Date {
+        val std = SimpleDateFormat("yy.MM.dd HH:mm", Locale.getDefault())
+        return std.parse(dateString)
+    }
+
+    fun isToday(date: Date): Boolean {
+        val today = Calendar.getInstance()
+        val comparisonDate = Calendar.getInstance()
+        comparisonDate.time = date
+        return today.get(Calendar.YEAR) == comparisonDate.get(Calendar.YEAR) &&
+                today.get(Calendar.MONTH) == comparisonDate.get(Calendar.MONTH) &&
+                today.get(Calendar.DAY_OF_MONTH) == comparisonDate.get(Calendar.DAY_OF_MONTH)
+    }
 }
 
 @Composable

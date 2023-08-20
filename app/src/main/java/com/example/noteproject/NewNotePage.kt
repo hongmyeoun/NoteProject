@@ -152,7 +152,7 @@ class NewNotePage : ComponentActivity() {
                                     .size(height = 30.dp, width = 40.dp)
                                     .clickable(enabled = isRecognitionEnabled) {
                                         val currentDate = SimpleDateFormat(
-                                            "yy.MM.dd", Locale.getDefault()
+                                            "yy.MM.dd HH:mm", Locale.getDefault()
                                         ).format(
                                             Date()
                                         )
