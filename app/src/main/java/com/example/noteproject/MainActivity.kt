@@ -10,11 +10,15 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.speech.RecognizerIntent
 import android.view.WindowInsets.Type.systemBars
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,9 +37,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,15 +58,23 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
@@ -72,6 +88,7 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,151 +112,305 @@ class MainActivity : ComponentActivity() {
 
                 val scope = rememberCoroutineScope()
 
-                Box() {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        NoteTopLayout(noteList)
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "main") {
+                    composable("main") {
+                        Box() {
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                NoteTopLayout(noteList)
 
-                        val activity = LocalContext.current as? Activity
-                        val sharedPref = remember { activity?.getPreferences(Context.MODE_PRIVATE) }
-                        var upSort by remember {
-                            val upSortValue = sharedPref?.getBoolean("upSort", true) ?: true
-                            mutableStateOf(upSortValue)
-                        }
-                        var sortOption by remember {
-                            val sortOptionValue =
-                                sharedPref?.getString("sortOption", SortOption.TITLE.name)
-                                    ?: SortOption.TITLE.name
-                            mutableStateOf(sortOptionValue)
-                        }
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            val sortedNoteList = when (sortOption) {
-                                SortOption.TITLE.name -> if (upSort) {
-                                    noteList.sortedBy { it.title }
-                                } else {
-                                    noteList.sortedByDescending { it.title }
+                                val activity = LocalContext.current as? Activity
+                                val sharedPref =
+                                    remember { activity?.getPreferences(Context.MODE_PRIVATE) }
+                                var upSort by remember {
+                                    val upSortValue = sharedPref?.getBoolean("upSort", true) ?: true
+                                    mutableStateOf(upSortValue)
                                 }
-
-                                else -> if (upSort) {
-                                    noteList.sortedBy { it.createdDate }
-                                } else {
-                                    noteList.sortedByDescending { it.createdDate }
+                                var sortOption by remember {
+                                    val sortOptionValue =
+                                        sharedPref?.getString("sortOption", SortOption.TITLE.name)
+                                            ?: SortOption.TITLE.name
+                                    mutableStateOf(sortOptionValue)
                                 }
-                            }
-                            item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                                    horizontalArrangement = Arrangement.End
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
-                                    Row(modifier = Modifier.clickable {
-                                        sortOption = when (sortOption) {
-                                            SortOption.TITLE.name -> SortOption.CREATED_DATE.name
-                                            else -> SortOption.TITLE.name
+                                    val sortedNoteList = when (sortOption) {
+                                        SortOption.TITLE.name -> if (upSort) {
+                                            noteList.sortedBy { it.title }
+                                        } else {
+                                            noteList.sortedByDescending { it.title }
                                         }
-                                        titleAndTimeSortEdit(sharedPref, sortOption)
-                                    }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.sort),
-                                            contentDescription = "Sort by title or time"
-                                        )
-                                        Text(
-                                            when (sortOption) {
-                                                SortOption.TITLE.name -> "제목순"
-                                                else -> "날짜순"
-                                            }
-                                        )
+
+                                        else -> if (upSort) {
+                                            noteList.sortedBy { it.createdDate }
+                                        } else {
+                                            noteList.sortedByDescending { it.createdDate }
+                                        }
                                     }
-                                    Spacer(modifier = Modifier.size(3.dp))
-                                    Icon(painter = painterResource(id = if (upSort) R.drawable.arrow_upward else R.drawable.baseline_arrow_downward_24),
-                                        contentDescription = "Sort by up or down",
-                                        modifier = Modifier.clickable {
-                                            upSort = !upSort
-                                            upAndDownSortEdit(sharedPref, upSort)
-                                        }
-                                    )
-                                }
-                            }
-
-                            val columns = 3 // 열 개수
-
-                            val chunkedNoteList = sortedNoteList.chunked(columns)
-
-                            items(chunkedNoteList.size) { rowIndex ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    for (note in chunkedNoteList[rowIndex]) {
-                                        Column(
+                                    item {
+                                        Row(
                                             modifier = Modifier
-                                                .weight(1f)
-                                                .pointerInput(Unit) {
-                                                    detectTapGestures(
-                                                        onTap = {
-                                                            val intent = Intent(
-                                                                context,
-                                                                ShowTextPage::class.java
-                                                            )
-                                                            intent.putExtra("Uid", note.uid)
-                                                            context.startActivity(intent)
-                                                        },
-                                                        onLongPress = {
-                                                            deletPressed = true
-                                                            deletingNote = note // 삭제될 노트 저장
-                                                        }
-                                                    )
-                                                },
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                .fillMaxWidth()
+                                                .padding(8.dp),
+                                            horizontalArrangement = Arrangement.End
                                         ) {
-                                            deletingNote?.let { note ->
-                                                if (deletPressed) {
-                                                    DeleteAlet(
-                                                        onDismiss = {
-                                                            deletPressed = false
-                                                            // 삭제 모드가 해제되면 노트도 초기화
-                                                            deletingNote = null
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.search),
+                                                contentDescription = "Search",
+                                                modifier = Modifier.clickable {
+                                                    navController.navigate("search")
+                                                })
+                                            Row(modifier = Modifier.clickable {
+                                                sortOption = when (sortOption) {
+                                                    SortOption.TITLE.name -> SortOption.CREATED_DATE.name
+                                                    else -> SortOption.TITLE.name
+                                                }
+                                                titleAndTimeSortEdit(sharedPref, sortOption)
+                                            }) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.sort),
+                                                    contentDescription = "Sort by title or time"
+                                                )
+                                                Text(
+                                                    when (sortOption) {
+                                                        SortOption.TITLE.name -> "제목순"
+                                                        else -> "날짜순"
+                                                    }
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.size(3.dp))
+                                            Icon(painter = painterResource(id = if (upSort) R.drawable.arrow_upward else R.drawable.baseline_arrow_downward_24),
+                                                contentDescription = "Sort by up or down",
+                                                modifier = Modifier.clickable {
+                                                    upSort = !upSort
+                                                    upAndDownSortEdit(sharedPref, upSort)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    val columns = 3 // 열 개수
+
+                                    val chunkedNoteList = sortedNoteList.chunked(columns)
+
+                                    items(chunkedNoteList.size) { rowIndex ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            for (note in chunkedNoteList[rowIndex]) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .pointerInput(Unit) {
+                                                            detectTapGestures(
+                                                                onTap = {
+                                                                    val intent = Intent(
+                                                                        context,
+                                                                        ShowTextPage::class.java
+                                                                    )
+                                                                    intent.putExtra("Uid", note.uid)
+                                                                    context.startActivity(intent)
+                                                                },
+                                                                onLongPress = {
+                                                                    deletPressed = true
+                                                                    deletingNote = note // 삭제될 노트 저장
+                                                                }
+                                                            )
                                                         },
-                                                        onDelete = {
-                                                            scope.launch(Dispatchers.IO) {
-                                                                db.noteDao().delete(note)
-                                                            }
-                                                            // 삭제 완료 후 삭제 모드 해제
-                                                            deletPressed = false
-                                                            // 삭제 완료 후 노트 초기화
-                                                            deletingNote = null
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    deletingNote?.let { note ->
+                                                        if (deletPressed) {
+                                                            DeleteAlet(
+                                                                onDismiss = {
+                                                                    deletPressed = false
+                                                                    // 삭제 모드가 해제되면 노트도 초기화
+                                                                    deletingNote = null
+                                                                },
+                                                                onDelete = {
+                                                                    scope.launch(Dispatchers.IO) {
+                                                                        db.noteDao().delete(note)
+                                                                    }
+                                                                    // 삭제 완료 후 삭제 모드 해제
+                                                                    deletPressed = false
+                                                                    // 삭제 완료 후 노트 초기화
+                                                                    deletingNote = null
+                                                                }
+                                                            )
                                                         }
-                                                    )
+                                                    }
+                                                    NoteBox(note, context)
+                                                    NoteTitle(note)
+                                                    NoteDate(note)
                                                 }
                                             }
-                                            NoteBox(note, context)
-                                            NoteTitle(note)
-                                            NoteDate(note)
                                         }
                                     }
                                 }
                             }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 30.dp, bottom = 50.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                NewNoteAction(context)
+                            }
                         }
+
                     }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 30.dp, bottom = 50.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        NewNoteAction(context)
+                    composable("search") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            var searchText by remember { mutableStateOf("") }
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.back),
+                                        contentDescription = "Back Button",
+                                        modifier = Modifier
+                                            .padding(10.dp)
+                                            .size(40.dp)
+                                            .clickable { navController.navigate("main") }
+                                    )
+                                    TextField(
+                                        value = searchText,
+                                        onValueChange = { searchText = it },
+                                        placeholder = {
+                                            Text(
+                                                text = "검색",
+                                                fontStyle = FontStyle.Italic,
+                                                fontSize = 25.sp,
+                                                fontFamily = fontFamily()
+                                            )
+                                        },
+                                        colors = TextFieldDefaults.textFieldColors(
+                                            containerColor = Color.Transparent,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent
+                                        ),
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        textStyle = TextStyle(
+                                            fontSize = 25.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = fontFamily()
+                                        )
+                                    )
+                                    val speechRecognizerLauncher =
+                                        rememberLauncherForActivityResult(
+                                            ActivityResultContracts.StartActivityForResult()
+                                        ) { result ->
+                                            if (result.resultCode == RESULT_OK) {
+                                                val data: Intent? = result.data
+                                                val results =
+                                                    data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                                                if (!results.isNullOrEmpty()) {
+                                                    searchText = results[0]
+                                                }
+                                            }
+                                        }
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_mic_24),
+                                        contentDescription = "STT",
+                                        modifier = Modifier
+                                            .padding(10.dp)
+                                            .size(height = 30.dp, width = 40.dp)
+                                            .clickable() {
+                                                val intent =
+                                                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                                intent.putExtra(
+                                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                                )
+                                                speechRecognizerLauncher.launch(intent)
+                                            }
+                                    )
+                                }
+                                val searchResult =
+                                    remember(searchText) { searchNotes(searchText, noteList) }
+
+                                if (searchText.isNotEmpty()) {
+                                    LazyColumn(modifier = Modifier.fillMaxHeight()) {
+                                        val columns = 3
+                                        val chunkedNoteList = searchResult.chunked(columns)
+
+                                        items(chunkedNoteList.size) { rowIndex ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 4.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                for (note in chunkedNoteList[rowIndex]) {
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clickable {
+                                                                val intent = Intent(
+                                                                    context,
+                                                                    ShowTextPage::class.java
+                                                                )
+                                                                intent.putExtra("Uid", note.uid)
+                                                                context.startActivity(intent)
+                                                            },
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        SearchNoteBox(note, context, searchText)
+                                                        SearchingTitle(note, searchText)
+                                                        NoteDate(note)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(10.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(text = "검색으로 노트찾기")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
+}
+
+
+fun searchNotes(searchText: String, noteList: List<Note>): List<Note> {
+    val searchResult = mutableListOf<Note>()
+    for (note in noteList) {
+        if (note.title!!.contains(other = searchText, ignoreCase = true) ||
+            note.script?.contains(other = searchText, ignoreCase = true) == true
+        ) {
+            searchResult.add(note)
+        }
+    }
+    return searchResult
 }
 
 fun upAndDownSortEdit(sharedPref: SharedPreferences?, sort: Boolean) {
@@ -288,6 +459,21 @@ private fun NoteBox(note: Note, context: Context) {
 }
 
 @Composable
+private fun SearchNoteBox(note: Note, context: Context, searchText: String) {
+    Box(
+        modifier = Modifier
+            .size(height = 170.dp, width = 120.dp)
+            .shadow(
+                0.3f.dp,
+                shape = RoundedCornerShape(1.dp)
+            )
+            .padding(10.dp)
+    ) {
+        SearchingScript(note, context, searchText)
+    }
+}
+
+@Composable
 private fun NoteDate(note: Note) {
     val currentDate = Date()
     val dateUtils = DateUtils()
@@ -321,7 +507,7 @@ class DateUtils {
 
     fun stringToDate(dateString: String): Date {
         val std = SimpleDateFormat("yy.MM.dd HH:mm", Locale.getDefault())
-        return std.parse(dateString)
+        return std.parse(dateString)!!
     }
 
     fun isToday(date: Date): Boolean {
@@ -347,11 +533,61 @@ private fun NoteTitle(note: Note) {
 }
 
 @Composable
+private fun SearchingTitle(note: Note, searchText: String) {
+    val highLightTitle = buildAnnotatedString {
+        val title = note.title ?: ""
+        val index = title.indexOf(searchText, ignoreCase = true)
+        if (index != -1) {
+            append(title.substring(0, index))
+            withStyle(style = SpanStyle(background = Color(0xE6FFAE38))) {
+                append(title.substring(index, index + searchText.length))
+            }
+            append(title.substring(index + searchText.length))
+        } else {
+            append(title)
+        }
+    }
+    Spacer(modifier = Modifier.height(2.dp))
+    Text(
+        text = highLightTitle,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        fontFamily = fontFamily(),
+        fontSize = 20.sp
+    )
+}
+
+@Composable
 private fun NoteScript(note: Note, context: Context) {
     Column {
         ShowDBImage(note, context)
         Text(
             text = note.script!!,
+            fontFamily = fontFamily(),
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun SearchingScript(note: Note, context: Context, searchText: String) {
+    val highLightScript = buildAnnotatedString {
+        val script = note.script ?: ""
+        val index = script.indexOf(searchText, ignoreCase = true)
+        if (index != -1) {
+            append(script.substring(0, index))
+            withStyle(style = SpanStyle(background = Color(0xE6FFAE38))) {
+                append(script.substring(index, index + searchText.length))
+            }
+            append(script.substring(index + searchText.length))
+        } else {
+            append(script)
+        }
+    }
+    Column {
+        ShowDBImage(note, context)
+        Text(
+            text = highLightScript,
             fontFamily = fontFamily(),
             fontSize = 12.sp
         )

@@ -22,5 +22,5 @@ interface NoteDao {
     fun update(note: Note)
 
     @Query("SELECT * FROM note WHERE uid = :uid")
-    fun getNoteByUid(uid: Int): Note?
+    fun getNoteByUid(uid: Int): Flow<Note?>
 }
