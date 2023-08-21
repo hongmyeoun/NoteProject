@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -127,7 +128,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NoteMainPage(
+private fun NoteMainPage(
     noteList: List<Note>,
     navController: NavHostController,
     context: Context,
@@ -156,7 +157,7 @@ fun NoteMainPage(
 }
 
 @Composable
-fun NoteBottomLayout(
+private fun NoteBottomLayout(
     noteList: List<Note>,
     navController: NavHostController,
     context: Context,
@@ -256,7 +257,7 @@ fun NoteBottomLayout(
 }
 
 @Composable
-fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase) {
+private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase) {
     var deletPressed by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -478,14 +479,9 @@ private fun NewNoteAction(context: Context) {
 
 @Composable
 private fun NoteBox(note: Note, context: Context) {
-    Box(
-        modifier = Modifier
-            .size(height = 170.dp, width = 110.dp)
-            .shadow(
-                0.3f.dp,
-                shape = RoundedCornerShape(1.dp)
-            )
-            .padding(10.dp)
+    Card(
+        modifier = Modifier.size(height = 170.dp, width = 110.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         NoteScript(note, context)
     }
@@ -596,7 +592,7 @@ private fun SearchingTitle(note: Note, searchText: String) {
 
 @Composable
 private fun NoteScript(note: Note, context: Context) {
-    Column {
+    Column(modifier = Modifier.padding(6.dp)) {
         ShowDBImage(note, context)
         Text(
             text = note.script!!,
@@ -689,7 +685,7 @@ private fun ShowDBImage(note: Note, context: Context) {
 fun fontFamily() = FontFamily(Font(R.font.roboto))
 
 @Composable
-fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
+private fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
