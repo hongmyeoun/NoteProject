@@ -10,6 +10,7 @@ import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -94,20 +95,10 @@ class NewNotePage : ComponentActivity() {
                                 onChange = { noteTitle = it },
                                 modifier = Modifier.weight(1f)
                             )
-                            SaveIconButton(
-                                isRecognitionEnabled,
-                                uriStringList,
-                                noteTitle,
-                                noteText,
-                                scope,
-                                db
-                            )
+                            SaveIconButton(isRecognitionEnabled, uriStringList, noteTitle, noteText, scope, db)
                         }
                         Divider()
-                        ShowSelectedImage(
-                            selectUris = selectUris,
-                            onClickImage = { selectUris -= it }
-                        )
+                        ShowSelectedImage(selectUris = selectUris, onClickImage = { selectUris -= it })
                         NoteScript(
                             noteText = noteText,
                             recognizedText = recognizedText,
@@ -124,52 +115,18 @@ class NewNotePage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            val launcher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.PickMultipleVisualMedia(),
-                                onResult = { uris ->
-                                    //기존에 골랐던 사진에 추가로 들어가기
-                                    selectUris += uris
-                                    //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
-                                    for (uri in selectUris) {
-                                        uri?.let {
-                                            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                            context.contentResolver.takePersistableUriPermission(uri, flag)
+                            GetImagesIconButton(selectUris = selectUris, onResult = { selectUris += it })
+                            GetVoiceTextIconButtons(
+                                isRecognitionEnabled = isRecognitionEnabled,
+                                onResult = {
+                                    if (it.resultCode == ComponentActivity.RESULT_OK) {
+                                        val data: Intent? = it.data
+                                        val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                                        if (!results.isNullOrEmpty()) {
+                                            recognizedText = " ${results[0]}"
+                                            isRecognitionEnabled = false
                                         }
                                     }
-                                }
-                            )
-                            CustomIcon(
-                                id = R.drawable.image_icon,
-                                contentDescription = "get image",
-                                onClicked = {
-                                    launcher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                }
-                            )
-                            val speechRecognizerLauncher = rememberLauncherForActivityResult(
-                                ActivityResultContracts.StartActivityForResult()
-                            ) { result ->
-                                if (result.resultCode == RESULT_OK) {
-                                    val data: Intent? = result.data
-                                    val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                                    if (!results.isNullOrEmpty()) {
-                                        recognizedText = " " + results[0]
-                                        isRecognitionEnabled = false
-                                    }
-                                }
-                            }
-                            CustomIcon(
-                                id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
-                                contentDescription = "mic",
-                                enabled = isRecognitionEnabled,
-                                onClicked = {
-                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                    intent.putExtra(
-                                        RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                    )
-                                    speechRecognizerLauncher.launch(intent)
                                 }
                             )
                             CustomIcon(
@@ -187,10 +144,60 @@ class NewNotePage : ComponentActivity() {
         }
     }
 }
+@Composable
+fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult:(ActivityResult)->Unit){
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        onResult(result)
+    }
+    CustomIcon(
+        id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
+        contentDescription = "mic",
+        enabled = isRecognitionEnabled,
+        onClicked = {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            intent.putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            speechRecognizerLauncher.launch(intent)
+        }
+    )
+}
+
+@Composable
+fun GetImagesIconButton(selectUris: List<Uri?>, onResult: (List<Uri?>) -> Unit){
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            //기존에 골랐던 사진에 추가로 들어가기
+            onResult(uris)
+            //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
+            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            for (uri in selectUris) {
+                uri?.let {
+                    context.contentResolver.takePersistableUriPermission(uri, flag)
+                }
+            }
+        }
+    )
+    CustomIcon(
+        id = R.drawable.image_icon,
+        contentDescription = "get image",
+        onClicked = {
+            launcher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }
+    )
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteScript(noteText: String, recognizedText: String, onChange: (String) -> Unit) {
+fun NoteScript(noteText: String, recognizedText: String, onChange: (String) -> Unit) {
     TextField(
         value = noteText + recognizedText,
         onValueChange = { onChange(it) },
@@ -205,12 +212,11 @@ private fun NoteScript(noteText: String, recognizedText: String, onChange: (Stri
             fontFamily = fontFamily()
         )
     )
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteTitle(noteTitle: String, onChange: (String) -> Unit, modifier: Modifier) {
+fun NoteTitle(noteTitle: String, onChange: (String) -> Unit, modifier: Modifier) {
     TextField(
         value = noteTitle,
         onValueChange = { onChange(it) },
@@ -238,7 +244,7 @@ private fun NoteTitle(noteTitle: String, onChange: (String) -> Unit, modifier: M
 }
 
 @Composable
-private fun ShowSelectedImage(selectUris: List<Uri?>, onClickImage: (Uri) -> Unit) {
+fun ShowSelectedImage(selectUris: List<Uri?>, onClickImage: (Uri) -> Unit) {
     val context = LocalContext.current
     LazyRow() {
         items(selectUris) { uri ->
@@ -298,9 +304,7 @@ private fun SaveIconButton(
             .padding(10.dp)
             .size(height = 30.dp, width = 40.dp)
             .clickable(enabled = isRecognitionEnabled) {
-                val currentDate = SimpleDateFormat(
-                    "yy.MM.dd HH:mm", Locale.getDefault()
-                ).format(Date())
+                val currentDate = SimpleDateFormat("yy.MM.dd HH:mm", Locale.getDefault()).format(Date())
                 val newNote = Note(
                     title = noteTitle,
                     script = noteText,
@@ -312,7 +316,6 @@ private fun SaveIconButton(
                         .noteDao()
                         .insertAll(newNote)
                 }
-
                 val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             })

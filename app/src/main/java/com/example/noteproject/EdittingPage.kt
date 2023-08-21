@@ -1,34 +1,26 @@
 package com.example.noteproject
 
 import android.content.Intent
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,16 +29,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -88,18 +77,7 @@ class EdittingPage : ComponentActivity() {
                         selectedUrisList?.map { uriString -> Uri.parse(uriString) }
                     mutableStateOf<List<Uri?>>(uriList ?: emptyList())
                 }
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.PickMultipleVisualMedia(),
-                    onResult = { uris ->
-                        selectUris += uris
-                        for (uri in selectUris) {
-                            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            if (uri != null){
-                                context.contentResolver.takePersistableUriPermission(uri, flag)
-                            }
-                        }
-                    }
-                )
+
                 val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
                     selectUris.map { uri -> uri.toString() }
                 } else {
@@ -112,120 +90,27 @@ class EdittingPage : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.back),
-                                contentDescription = "Back Button",
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .size(40.dp)
-                                    .clickable {
-                                        val intent = Intent(context, MainActivity::class.java)
-                                        context.startActivity(intent)
-                                    }
+                            BackIconButton()
+                            NoteTitle(
+                                noteTitle = editNoteTitle,
+                                onChange = { editNoteTitle = it },
+                                modifier = Modifier.weight(1f)
                             )
-                            TextField(
-                                value = editNoteTitle,
-                                onValueChange = { editNoteTitle = it },
-                                colors = TextFieldDefaults.textFieldColors(
-                                    containerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                maxLines = 1,
-                                textStyle = TextStyle(
-                                    fontSize = 25.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = fontFamily()
-                                ),
-                                modifier = Modifier.weight(1f),
-                            )
-                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
-                                contentDescription = "Save",
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .size(height = 30.dp, width = 40.dp)
-                                    .clickable(enabled = isRecognitionEnabled) {
-                                        if (uriStringList != null) {
-                                            scope.launch(Dispatchers.IO) {
-                                                foundNote?.title = editNoteTitle
-                                                foundNote?.script = editNoteText
-                                                foundNote?.imageListString = uriStringList
-                                                if (foundNote != null) {
-                                                    db
-                                                        .noteDao()
-                                                        .update(foundNote!!)
-                                                }
-                                            }
-                                            val intent =
-                                                Intent(context, ShowTextPage::class.java)
-                                            intent.putExtra("Uid", foundNote!!.uid)
-                                            startActivity(intent)
-                                        } else {
-                                            scope.launch(Dispatchers.IO) {
-                                                foundNote?.title = editNoteTitle
-                                                foundNote?.script = editNoteText
-                                                foundNote?.imageListString = null
-                                                if (foundNote != null) {
-                                                    db
-                                                        .noteDao()
-                                                        .update(foundNote!!)
-                                                }
-                                            }
-                                            val intent = Intent(context, ShowTextPage::class.java)
-                                            intent.putExtra("Uid", foundNote!!.uid)
-                                            startActivity(intent)
-                                        }
-                                    }
-                            )
+                            EditDoneIconButton(isRecognitionEnabled, scope, foundNote, editNoteTitle, editNoteText, uriStringList, db)
                         }
                         Divider()
-                        Column {
-                            LazyRow() {
-                                items(selectUris) { uri ->
-                                    val bitmap =
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                            ImageDecoder.decodeBitmap(
-                                                ImageDecoder.createSource(
-                                                    context.contentResolver,
-                                                    uri!!
-                                                )
-                                            )
-                                        } else {
-                                            MediaStore.Images.Media.getBitmap(
-                                                context.contentResolver,
-                                                uri
-                                            )
-                                        }
-                                    Image(
-                                        bitmap = bitmap.asImageBitmap(),
-                                        contentDescription = "",
-                                        modifier = Modifier
-                                            .size(100.dp)
-                                            .clickable {
-                                                selectUris = selectUris - uri
-                                            }
-                                    )
-                                }
-                            }
-                        }
-                        TextField(
-                            value = editNoteText + recognizedText,
-                            onValueChange = {
+                        ShowSelectedImage(
+                            selectUris = selectUris,
+                            onClickImage = { selectUris -= it }
+                        )
+                        NoteScript(
+                            noteText = editNoteText,
+                            recognizedText = recognizedText,
+                            onChange = {
                                 editNoteText = it
                                 recognizedText = ""
                                 isRecognitionEnabled = true
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                            colors = TextFieldDefaults.textFieldColors(
-                                containerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            textStyle = TextStyle(
-                                fontSize = 15.sp,
-                                fontFamily = fontFamily()
-                            )
-                        )
+                            })
                     }
                     Box(
                         modifier = Modifier
@@ -233,57 +118,63 @@ class EdittingPage : ComponentActivity() {
                             .padding(end = 30.dp, bottom = 50.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        val speechRecognizerLauncher = rememberLauncherForActivityResult(
-                            ActivityResultContracts.StartActivityForResult()
-                        ) { result ->
-                            if (result.resultCode == RESULT_OK) {
-                                val data: Intent? = result.data
-                                val results =
-                                    data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                                if (!results.isNullOrEmpty()) {
-                                    recognizedText = " " + results[0]
-                                    isRecognitionEnabled = false
-                                }
-                            }
-                        }
+
 
                         Column {
-                            Icon(painter = painterResource(id = R.drawable.image_icon),
-                                contentDescription = "get image",
-                                modifier = Modifier
-                                    .clickable {
-                                        launcher.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                                            )
-                                        )
+                            val launcher = rememberLauncherForActivityResult(
+                                contract = ActivityResultContracts.PickMultipleVisualMedia(),
+                                onResult = { uris ->
+                                    selectUris += uris
+                                    for (uri in selectUris) {
+                                        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        if (uri != null) {
+                                            context.contentResolver.takePersistableUriPermission(uri, flag)
+                                        }
                                     }
-                                    .size(50.dp))
-                            Icon(
-                                painter =
-                                painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
-                                contentDescription = "mic",
-                                modifier = Modifier
-                                    .clickable(enabled = isRecognitionEnabled) {
-                                        val intent =
-                                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                        intent.putExtra(
-                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                        )
-                                        speechRecognizerLauncher.launch(intent)
-                                    }
-                                    .size(50.dp)
+                                }
                             )
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_restart_alt_24),
-                                contentDescription = "mic",
-                                modifier = Modifier
-                                    .clickable {
-                                        recognizedText = ""
-                                        isRecognitionEnabled = true
+                            CustomIcon(
+                                id = R.drawable.image_icon,
+                                contentDescription = "get image",
+                                onClicked = {
+                                    launcher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                            )
+                            val speechRecognizerLauncher = rememberLauncherForActivityResult(
+                                ActivityResultContracts.StartActivityForResult()
+                            ) { result ->
+                                if (result.resultCode == RESULT_OK) {
+                                    val data: Intent? = result.data
+                                    val results =
+                                        data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                                    if (!results.isNullOrEmpty()) {
+                                        recognizedText = " " + results[0]
+                                        isRecognitionEnabled = false
                                     }
-                                    .size(50.dp)
+                                }
+                            }
+                            CustomIcon(
+                                id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
+                                contentDescription = "mic",
+                                enabled = isRecognitionEnabled,
+                                onClicked = {
+                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                    intent.putExtra(
+                                        RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                    )
+                                    speechRecognizerLauncher.launch(intent)
+                                }
+                            )
+                            CustomIcon(
+                                id = R.drawable.baseline_restart_alt_24,
+                                contentDescription = "recognized reset",
+                                onClicked = {
+                                    recognizedText = ""
+                                    isRecognitionEnabled = true
+                                }
                             )
                         }
                     }
@@ -291,4 +182,36 @@ class EdittingPage : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+private fun EditDoneIconButton(
+    isRecognitionEnabled: Boolean,
+    scope: CoroutineScope,
+    foundNote: Note?,
+    editNoteTitle: String,
+    editNoteText: String,
+    uriStringList: List<String?>?,
+    db: NoteAppDatabase,
+) {
+    val context = LocalContext.current
+    Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
+        contentDescription = "Save",
+        modifier = Modifier
+            .padding(10.dp)
+            .size(height = 30.dp, width = 40.dp)
+            .clickable(enabled = isRecognitionEnabled) {
+                scope.launch(Dispatchers.IO) {
+                    foundNote?.title = editNoteTitle
+                    foundNote?.script = editNoteText
+                    foundNote?.imageListString = uriStringList
+                    if (foundNote != null) {
+                        db.noteDao().update(foundNote)
+                    }
+                }
+                val intent = Intent(context, ShowTextPage::class.java)
+                intent.putExtra("Uid", foundNote!!.uid)
+                context.startActivity(intent)
+            }
+    )
 }
