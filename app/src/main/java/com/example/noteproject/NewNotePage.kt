@@ -114,17 +114,6 @@ class NewNotePage : ComponentActivity() {
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             BackIconButton(context)
-//                            Icon(
-//                                painter = painterResource(id = R.drawable.back),
-//                                contentDescription = "Back Button",
-//                                modifier = Modifier
-//                                    .padding(10.dp)
-//                                    .size(40.dp)
-//                                    .clickable {
-//                                        val intent = Intent(context, MainActivity::class.java)
-//                                        context.startActivity(intent)
-//                                    }
-//                            )
                             TextField(
                                 value = noteTitle,
                                 onValueChange = { noteTitle = it },
