@@ -71,20 +71,6 @@ class NewNotePage : ComponentActivity() {
                 var noteText by remember { mutableStateOf("") }
 
                 var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.PickMultipleVisualMedia(),
-                    onResult = { uris ->
-                        //기존에 골랐던 사진에 추가로 들어가기
-                        selectUris += uris
-                        //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
-                        for (uri in selectUris) {
-                            uri?.let {
-                                val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                context.contentResolver.takePersistableUriPermission(uri, flag)
-                            }
-                        }
-                    }
-                )
                 val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
                     selectUris.map { uri -> uri.toString() }
                 } else {
@@ -94,18 +80,6 @@ class NewNotePage : ComponentActivity() {
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
 
-                val speechRecognizerLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.StartActivityForResult()
-                ) { result ->
-                    if (result.resultCode == RESULT_OK) {
-                        val data: Intent? = result.data
-                        val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                        if (!results.isNullOrEmpty()) {
-                            recognizedText = " " + results[0]
-                            isRecognitionEnabled = false
-                        }
-                    }
-                }
 
                 Box {
                     Column {
@@ -150,19 +124,47 @@ class NewNotePage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            GetImageIconButton(
+                            val launcher = rememberLauncherForActivityResult(
+                                contract = ActivityResultContracts.PickMultipleVisualMedia(),
+                                onResult = { uris ->
+                                    //기존에 골랐던 사진에 추가로 들어가기
+                                    selectUris += uris
+                                    //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
+                                    for (uri in selectUris) {
+                                        uri?.let {
+                                            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                            context.contentResolver.takePersistableUriPermission(uri, flag)
+                                        }
+                                    }
+                                }
+                            )
+                            CustomIcon(
+                                id = R.drawable.image_icon,
+                                contentDescription = "get image",
                                 onClicked = {
                                     launcher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                                        )
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                     )
-                                })
-                            VoiceToText(
-                                isRecognitionEnabled = isRecognitionEnabled,
+                                }
+                            )
+                            val speechRecognizerLauncher = rememberLauncherForActivityResult(
+                                ActivityResultContracts.StartActivityForResult()
+                            ) { result ->
+                                if (result.resultCode == RESULT_OK) {
+                                    val data: Intent? = result.data
+                                    val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                                    if (!results.isNullOrEmpty()) {
+                                        recognizedText = " " + results[0]
+                                        isRecognitionEnabled = false
+                                    }
+                                }
+                            }
+                            CustomIcon(
+                                id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
+                                contentDescription = "mic",
+                                enabled = isRecognitionEnabled,
                                 onClicked = {
-                                    val intent =
-                                        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                                     intent.putExtra(
                                         RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                                         RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
@@ -170,11 +172,14 @@ class NewNotePage : ComponentActivity() {
                                     speechRecognizerLauncher.launch(intent)
                                 }
                             )
-                            RecogRestartIconButton(
+                            CustomIcon(
+                                id = R.drawable.baseline_restart_alt_24,
+                                contentDescription = "recognized reset",
                                 onClicked = {
                                     recognizedText = ""
                                     isRecognitionEnabled = true
-                                })
+                                }
+                            )
                         }
                     }
                 }
@@ -262,34 +267,18 @@ private fun ShowSelectedImage(selectUris: List<Uri?>, onClickImage: (Uri) -> Uni
 
 
 @Composable
-private fun VoiceToText(isRecognitionEnabled: Boolean, onClicked: () -> Unit) {
-    Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
-        contentDescription = "mic",
+fun CustomIcon(
+    id: Int,
+    contentDescription: String,
+    enabled: Boolean = true,
+    onClicked: () -> Unit
+) {
+    Icon(painter = painterResource(id = id),
+        contentDescription = contentDescription,
         modifier = Modifier
-            .clickable(enabled = isRecognitionEnabled) {
-                onClicked()
-            }
+            .clickable(enabled = enabled) { onClicked() }
             .size(50.dp))
-}
 
-@Composable
-private fun GetImageIconButton(onClicked: () -> Unit) {
-    Icon(painter = painterResource(id = R.drawable.image_icon),
-        contentDescription = "get image",
-        modifier = Modifier
-            .clickable {
-                onClicked()
-            }
-            .size(50.dp))
-}
-
-@Composable
-private fun RecogRestartIconButton(onClicked: () -> Unit) {
-    Icon(painter = painterResource(id = R.drawable.baseline_restart_alt_24),
-        contentDescription = "recognized reset",
-        modifier = Modifier
-            .clickable { onClicked() }
-            .size(50.dp))
 }
 
 @Composable
@@ -311,33 +300,19 @@ private fun SaveIconButton(
             .clickable(enabled = isRecognitionEnabled) {
                 val currentDate = SimpleDateFormat(
                     "yy.MM.dd HH:mm", Locale.getDefault()
-                ).format(
-                    Date()
+                ).format(Date())
+                val newNote = Note(
+                    title = noteTitle,
+                    script = noteText,
+                    createdDate = currentDate,
+                    imageListString = uriStringList
                 )
-                uriStringList?.let {
-                    val newNote = Note(
-                        title = noteTitle,
-                        script = noteText,
-                        createdDate = currentDate,
-                        imageListString = uriStringList
-                    )
-                    scope.launch(Dispatchers.IO) {
-                        db
-                            .noteDao()
-                            .insertAll(newNote)
-                    }
-                } ?: run {
-                    val newNote = Note(
-                        title = noteTitle,
-                        script = noteText,
-                        createdDate = currentDate
-                    )
-                    scope.launch(Dispatchers.IO) {
-                        db
-                            .noteDao()
-                            .insertAll(newNote)
-                    }
+                scope.launch(Dispatchers.IO) {
+                    db
+                        .noteDao()
+                        .insertAll(newNote)
                 }
+
                 val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             })
