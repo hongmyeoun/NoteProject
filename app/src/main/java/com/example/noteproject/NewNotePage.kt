@@ -1,6 +1,5 @@
 package com.example.noteproject
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -39,7 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -80,8 +78,10 @@ class NewNotePage : ComponentActivity() {
                         selectUris += uris
                         //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
                         for (uri in selectUris) {
-                            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            context.contentResolver.takePersistableUriPermission(uri!!, flag)
+                            uri?.let {
+                                val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                context.contentResolver.takePersistableUriPermission(uri, flag)
+                            }
                         }
                     }
                 )
@@ -93,6 +93,7 @@ class NewNotePage : ComponentActivity() {
 
                 var recognizedText by remember { mutableStateOf("") }
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
+
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -113,30 +114,11 @@ class NewNotePage : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            BackIconButton(context)
-                            TextField(
-                                value = noteTitle,
-                                onValueChange = { noteTitle = it },
-                                modifier = Modifier.weight(1f),
-                                placeholder = {
-                                    Text(
-                                        text = "제목",
-                                        fontStyle = FontStyle.Italic,
-                                        fontSize = 25.sp,
-                                        fontFamily = fontFamily()
-                                    )
-                                },
-                                colors = TextFieldDefaults.textFieldColors(
-                                    containerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                maxLines = 1,
-                                textStyle = TextStyle(
-                                    fontSize = 25.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = fontFamily()
-                                )
+                            BackIconButton()
+                            NoteTitle(
+                                noteTitle = noteTitle,
+                                onChange = { noteTitle = it },
+                                modifier = Modifier.weight(1f)
                             )
                             SaveIconButton(
                                 isRecognitionEnabled,
@@ -144,56 +126,22 @@ class NewNotePage : ComponentActivity() {
                                 noteTitle,
                                 noteText,
                                 scope,
-                                db,
-                                context
+                                db
                             )
                         }
                         Divider()
-                        LazyRow() {
-                            items(selectUris) { uri ->
-                                val bitmap =
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                        ImageDecoder.decodeBitmap(
-                                            ImageDecoder.createSource(
-                                                context.contentResolver,
-                                                uri!!
-                                            )
-                                        )
-                                    } else {
-                                        MediaStore.Images.Media.getBitmap(
-                                            context.contentResolver,
-                                            uri
-                                        )
-                                    }
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = "",
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .clickable {
-                                            selectUris = selectUris - uri
-                                        }
-                                )
-                            }
-                        }
-                        TextField(
-                            value = noteText + recognizedText,
-                            onValueChange = {
+                        ShowSelectedImage(
+                            selectUris = selectUris,
+                            onClickImage = { selectUris -= it }
+                        )
+                        NoteScript(
+                            noteText = noteText,
+                            recognizedText = recognizedText,
+                            onChange = {
                                 noteText = it
                                 recognizedText = ""
                                 isRecognitionEnabled = true
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                            colors = TextFieldDefaults.textFieldColors(
-                                containerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            textStyle = TextStyle(
-                                fontSize = 15.sp,
-                                fontFamily = fontFamily()
-                            )
-                        )
+                            })
                     }
                     Box(
                         modifier = Modifier
@@ -202,45 +150,146 @@ class NewNotePage : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Column {
-                            Icon(painter = painterResource(id = R.drawable.image_icon),
-                                contentDescription = "get image",
-                                modifier = Modifier
-                                    .clickable {
-                                        launcher.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                                            )
+                            GetImageIconButton(
+                                onClicked = {
+                                    launcher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly
                                         )
-                                    }
-                                    .size(50.dp))
-                            Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
-                                contentDescription = "mic",
-                                modifier = Modifier
-                                    .clickable(enabled = isRecognitionEnabled) {
-                                        val intent =
-                                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                        intent.putExtra(
-                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                        )
-                                        speechRecognizerLauncher.launch(intent)
-                                    }
-                                    .size(50.dp))
-                            Icon(painter = painterResource(id = R.drawable.baseline_restart_alt_24),
-                                contentDescription = "recognized reset",
-                                modifier = Modifier
-                                    .clickable {
-                                        recognizedText = ""
-                                        isRecognitionEnabled = true
-                                    }
-                                    .size(50.dp))
+                                    )
+                                })
+                            VoiceToText(
+                                isRecognitionEnabled = isRecognitionEnabled,
+                                onClicked = {
+                                    val intent =
+                                        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                    intent.putExtra(
+                                        RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                    )
+                                    speechRecognizerLauncher.launch(intent)
+                                }
+                            )
+                            RecogRestartIconButton(
+                                onClicked = {
+                                    recognizedText = ""
+                                    isRecognitionEnabled = true
+                                })
                         }
                     }
                 }
             }
         }
     }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NoteScript(noteText: String, recognizedText: String, onChange: (String) -> Unit) {
+    TextField(
+        value = noteText + recognizedText,
+        onValueChange = { onChange(it) },
+        modifier = Modifier.fillMaxSize(),
+        colors = TextFieldDefaults.textFieldColors(
+            containerColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        ),
+        textStyle = TextStyle(
+            fontSize = 15.sp,
+            fontFamily = fontFamily()
+        )
+    )
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NoteTitle(noteTitle: String, onChange: (String) -> Unit, modifier: Modifier) {
+    TextField(
+        value = noteTitle,
+        onValueChange = { onChange(it) },
+        modifier = modifier,
+        placeholder = {
+            Text(
+                text = "제목",
+                fontStyle = FontStyle.Italic,
+                fontSize = 25.sp,
+                fontFamily = fontFamily()
+            )
+        },
+        colors = TextFieldDefaults.textFieldColors(
+            containerColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        ),
+        maxLines = 1,
+        textStyle = TextStyle(
+            fontSize = 25.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = fontFamily()
+        )
+    )
+}
+
+@Composable
+private fun ShowSelectedImage(selectUris: List<Uri?>, onClickImage: (Uri) -> Unit) {
+    val context = LocalContext.current
+    LazyRow() {
+        items(selectUris) { uri ->
+            uri?.let {
+                val bitmap =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(
+                            ImageDecoder.createSource(context.contentResolver, uri)
+                        )
+                    } else {
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    }
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "",
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clickable {
+                            onClickImage(uri)
+                        }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun VoiceToText(isRecognitionEnabled: Boolean, onClicked: () -> Unit) {
+    Icon(painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24),
+        contentDescription = "mic",
+        modifier = Modifier
+            .clickable(enabled = isRecognitionEnabled) {
+                onClicked()
+            }
+            .size(50.dp))
+}
+
+@Composable
+private fun GetImageIconButton(onClicked: () -> Unit) {
+    Icon(painter = painterResource(id = R.drawable.image_icon),
+        contentDescription = "get image",
+        modifier = Modifier
+            .clickable {
+                onClicked()
+            }
+            .size(50.dp))
+}
+
+@Composable
+private fun RecogRestartIconButton(onClicked: () -> Unit) {
+    Icon(painter = painterResource(id = R.drawable.baseline_restart_alt_24),
+        contentDescription = "recognized reset",
+        modifier = Modifier
+            .clickable { onClicked() }
+            .size(50.dp))
 }
 
 @Composable
@@ -251,8 +300,8 @@ private fun SaveIconButton(
     noteText: String,
     scope: CoroutineScope,
     db: NoteAppDatabase,
-    context: Context
 ) {
+    val context = LocalContext.current
     Icon(
         painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
         contentDescription = "Save",
@@ -265,7 +314,7 @@ private fun SaveIconButton(
                 ).format(
                     Date()
                 )
-                if (uriStringList != null) {
+                uriStringList?.let {
                     val newNote = Note(
                         title = noteTitle,
                         script = noteText,
@@ -277,7 +326,7 @@ private fun SaveIconButton(
                             .noteDao()
                             .insertAll(newNote)
                     }
-                } else {
+                } ?: run {
                     val newNote = Note(
                         title = noteTitle,
                         script = noteText,

@@ -150,7 +150,7 @@ private fun NoteMainPage(
                 .padding(end = 30.dp, bottom = 50.dp),
             contentAlignment = Alignment.Center
         ) {
-            NewNoteAction(context)
+            NewNoteIconButton(context)
         }
     }
 
@@ -265,10 +265,7 @@ private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: N
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
-                        val intent = Intent(
-                            context,
-                            ShowTextPage::class.java
-                        )
+                        val intent = Intent(context, ShowTextPage::class.java)
                         intent.putExtra("Uid", note.uid)
                         context.startActivity(intent)
                     },
@@ -464,7 +461,7 @@ enum class SortOption {
 }
 
 @Composable
-private fun NewNoteAction(context: Context) {
+private fun NewNoteIconButton(context: Context) {
     Icon(
         painter = painterResource(id = R.drawable.note_add),
         contentDescription = "newNote",

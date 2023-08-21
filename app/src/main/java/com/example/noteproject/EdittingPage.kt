@@ -74,6 +74,7 @@ class EdittingPage : ComponentActivity() {
 
                 //데이터가 로드되지 않은 상태에서 noteList에 uid를 찾기 때문에 foundNote2는 null이 됨
                 val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
+//                val title = foundNote?.title?: ""
 //                val foundNote = noteList.find { it.uid == targetUid }
 
                 //foundNote2는 null이기 때문에 uriList는 결과적으로 emptyList값으로 처음에 저장됨
@@ -90,9 +91,7 @@ class EdittingPage : ComponentActivity() {
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickMultipleVisualMedia(),
                     onResult = { uris ->
-                        //기존에 골랐던 사진에 추가로 들어가기
                         selectUris += uris
-                        //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
                         for (uri in selectUris) {
                             val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
                             if (uri != null){

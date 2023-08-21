@@ -91,7 +91,7 @@ class ShowTextPage : ComponentActivity() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        BackIconButton(context)
+                        BackIconButton()
                         Text(
                             text = foundNote?.title ?: "제목",
                             fontWeight = FontWeight.Bold,
@@ -196,7 +196,8 @@ private fun EditIconButton(
 }
 
 @Composable
-fun BackIconButton(context: Context) {
+fun BackIconButton() {
+    val context = LocalContext.current
     Icon(
         painter = painterResource(id = R.drawable.back),
         contentDescription = "Back Button",
