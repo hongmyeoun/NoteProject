@@ -53,12 +53,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -83,6 +81,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -93,7 +92,6 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,13 +105,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             NoteProjectTheme {
-
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
-
-                var deletPressed by remember { mutableStateOf(false) }
-                var deletingNote by remember { mutableStateOf<Note?>(null) }
 
                 val scope = rememberCoroutineScope()
 
@@ -121,158 +115,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = "main") {
                     composable("main") {
-                        Box() {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                NoteTopLayout(noteList)
-
-                                val activity = LocalContext.current as? Activity
-                                val sharedPref =
-                                    remember { activity?.getPreferences(Context.MODE_PRIVATE) }
-                                var upSort by remember {
-                                    val upSortValue = sharedPref?.getBoolean("upSort", true) ?: true
-                                    mutableStateOf(upSortValue)
-                                }
-                                var sortOption by remember {
-                                    val sortOptionValue =
-                                        sharedPref?.getString("sortOption", SortOption.TITLE.name)
-                                            ?: SortOption.TITLE.name
-                                    mutableStateOf(sortOptionValue)
-                                }
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    val sortedNoteList = when (sortOption) {
-                                        SortOption.TITLE.name -> if (upSort) {
-                                            noteList.sortedBy { it.title }
-                                        } else {
-                                            noteList.sortedByDescending { it.title }
-                                        }
-
-                                        else -> if (upSort) {
-                                            noteList.sortedBy { it.createdDate }
-                                        } else {
-                                            noteList.sortedByDescending { it.createdDate }
-                                        }
-                                    }
-                                    item {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(8.dp),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.search),
-                                                contentDescription = "Search",
-                                                modifier = Modifier.clickable {
-                                                    navController.navigate("search")
-                                                })
-                                            Row(modifier = Modifier.clickable {
-                                                sortOption = when (sortOption) {
-                                                    SortOption.TITLE.name -> SortOption.CREATED_DATE.name
-                                                    else -> SortOption.TITLE.name
-                                                }
-                                                titleAndTimeSortEdit(sharedPref, sortOption)
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.sort),
-                                                    contentDescription = "Sort by title or time"
-                                                )
-                                                Text(
-                                                    when (sortOption) {
-                                                        SortOption.TITLE.name -> "제목순"
-                                                        else -> "날짜순"
-                                                    }
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.size(3.dp))
-                                            Icon(painter = painterResource(id = if (upSort) R.drawable.arrow_upward else R.drawable.baseline_arrow_downward_24),
-                                                contentDescription = "Sort by up or down",
-                                                modifier = Modifier.clickable {
-                                                    upSort = !upSort
-                                                    upAndDownSortEdit(sharedPref, upSort)
-                                                }
-                                            )
-                                        }
-                                    }
-
-                                    val columns = 3 // 열 개수
-
-                                    val chunkedNoteList = sortedNoteList.chunked(columns)
-
-                                    items(chunkedNoteList.size) { rowIndex ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 4.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            for (note in chunkedNoteList[rowIndex]) {
-                                                Column(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .pointerInput(Unit) {
-                                                            detectTapGestures(
-                                                                onTap = {
-                                                                    val intent = Intent(
-                                                                        context,
-                                                                        ShowTextPage::class.java
-                                                                    )
-                                                                    intent.putExtra("Uid", note.uid)
-                                                                    context.startActivity(intent)
-                                                                },
-                                                                onLongPress = {
-                                                                    deletPressed = true
-                                                                    deletingNote = note // 삭제될 노트 저장
-                                                                }
-                                                            )
-                                                        },
-                                                    horizontalAlignment = Alignment.CenterHorizontally
-                                                ) {
-                                                    deletingNote?.let { note ->
-                                                        if (deletPressed) {
-                                                            DeleteAlet(
-                                                                onDismiss = {
-                                                                    deletPressed = false
-                                                                    // 삭제 모드가 해제되면 노트도 초기화
-                                                                    deletingNote = null
-                                                                },
-                                                                onDelete = {
-                                                                    scope.launch(Dispatchers.IO) {
-                                                                        db.noteDao().delete(note)
-                                                                    }
-                                                                    // 삭제 완료 후 삭제 모드 해제
-                                                                    deletPressed = false
-                                                                    // 삭제 완료 후 노트 초기화
-                                                                    deletingNote = null
-                                                                }
-                                                            )
-                                                        }
-                                                    }
-                                                    NoteBox(note, context)
-                                                    NoteTitle(note)
-                                                    NoteDate(note)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(end = 30.dp, bottom = 50.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                NewNoteAction(context)
-                            }
-                        }
-
+                        NoteMainPage(noteList, navController, context, scope, db)
                     }
                     composable("search") {
                         NoteSearchPage(navController, noteList, context)
@@ -281,8 +124,170 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+@Composable
+fun NoteMainPage(noteList: List<Note>, navController: NavHostController, context: Context, scope: CoroutineScope, db: NoteAppDatabase){
+    Box() {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            NoteTopLayout(noteList)
+            NoteBottomLayout(noteList, navController, context, scope, db)
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 30.dp, bottom = 50.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            NewNoteAction(context)
+        }
+    }
 
 }
+
+@Composable
+fun NoteBottomLayout(noteList: List<Note>, navController: NavHostController, context: Context, scope: CoroutineScope, db: NoteAppDatabase){
+    val activity = LocalContext.current as? Activity
+    val sharedPref =
+        remember { activity?.getPreferences(Context.MODE_PRIVATE) }
+    var upSort by remember {
+        val upSortValue = sharedPref?.getBoolean("upSort", true) ?: true
+        mutableStateOf(upSortValue)
+    }
+    var sortOption by remember {
+        val sortOptionValue =
+            sharedPref?.getString("sortOption", SortOption.TITLE.name)
+                ?: SortOption.TITLE.name
+        mutableStateOf(sortOptionValue)
+    }
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val sortedNoteList = when (sortOption) {
+            SortOption.TITLE.name -> if (upSort) {
+                noteList.sortedBy { it.title }
+            } else {
+                noteList.sortedByDescending { it.title }
+            }
+
+            else -> if (upSort) {
+                noteList.sortedBy { it.createdDate }
+            } else {
+                noteList.sortedByDescending { it.createdDate }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.search),
+                    contentDescription = "Search",
+                    modifier = Modifier.clickable {
+                        navController.navigate("search")
+                    })
+                Row(modifier = Modifier.clickable {
+                    sortOption = when (sortOption) {
+                        SortOption.TITLE.name -> SortOption.CREATED_DATE.name
+                        else -> SortOption.TITLE.name
+                    }
+                    titleAndTimeSortEdit(sharedPref, sortOption)
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.sort),
+                        contentDescription = "Sort by title or time"
+                    )
+                    Text(
+                        when (sortOption) {
+                            SortOption.TITLE.name -> "제목순"
+                            else -> "날짜순"
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.size(3.dp))
+                Icon(painter = painterResource(id = if (upSort) R.drawable.arrow_upward else R.drawable.baseline_arrow_downward_24),
+                    contentDescription = "Sort by up or down",
+                    modifier = Modifier.clickable {
+                        upSort = !upSort
+                        upAndDownSortEdit(sharedPref, upSort)
+                    }
+                )
+            }
+        }
+
+        val columns = 3 // 열 개수
+
+        val chunkedNoteList = sortedNoteList.chunked(columns)
+
+        items(chunkedNoteList.size) { rowIndex ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                for (note in chunkedNoteList[rowIndex]) {
+                    NoteItems(context, note, scope, db)
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
+fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase){
+    var deletPressed by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .padding(9.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        val intent = Intent(
+                            context,
+                            ShowTextPage::class.java
+                        )
+                        intent.putExtra("Uid", note.uid)
+                        context.startActivity(intent)
+                    },
+                    onLongPress = {
+                        deletPressed = true
+                    }
+                )
+            },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        note.let {
+            if (deletPressed) {
+                DeleteAlet(
+                    onDismiss = {
+                        deletPressed = false
+                    },
+                    onDelete = {
+                        scope.launch(Dispatchers.IO) {
+                            db.noteDao().delete(note)
+                        }
+                        deletPressed = false
+                    }
+                )
+            }
+        }
+        NoteBox(note, context)
+        NoteTitle(note)
+        NoteDate(note)
+    }
+}
+
+
+
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -464,7 +469,7 @@ private fun NewNoteAction(context: Context) {
 private fun NoteBox(note: Note, context: Context) {
     Box(
         modifier = Modifier
-            .size(height = 170.dp, width = 120.dp)
+            .size(height = 170.dp, width = 110.dp)
             .shadow(
                 0.3f.dp,
                 shape = RoundedCornerShape(1.dp)
