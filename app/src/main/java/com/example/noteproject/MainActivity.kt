@@ -125,8 +125,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
-fun NoteMainPage(noteList: List<Note>, navController: NavHostController, context: Context, scope: CoroutineScope, db: NoteAppDatabase){
+fun NoteMainPage(
+    noteList: List<Note>,
+    navController: NavHostController,
+    context: Context,
+    scope: CoroutineScope,
+    db: NoteAppDatabase
+) {
     Box() {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -149,7 +156,13 @@ fun NoteMainPage(noteList: List<Note>, navController: NavHostController, context
 }
 
 @Composable
-fun NoteBottomLayout(noteList: List<Note>, navController: NavHostController, context: Context, scope: CoroutineScope, db: NoteAppDatabase){
+fun NoteBottomLayout(
+    noteList: List<Note>,
+    navController: NavHostController,
+    context: Context,
+    scope: CoroutineScope,
+    db: NoteAppDatabase
+) {
     val activity = LocalContext.current as? Activity
     val sharedPref =
         remember { activity?.getPreferences(Context.MODE_PRIVATE) }
@@ -243,7 +256,7 @@ fun NoteBottomLayout(noteList: List<Note>, navController: NavHostController, con
 }
 
 @Composable
-fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase){
+fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase) {
     var deletPressed by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -285,8 +298,6 @@ fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDa
         NoteDate(note)
     }
 }
-
-
 
 
 @Composable
