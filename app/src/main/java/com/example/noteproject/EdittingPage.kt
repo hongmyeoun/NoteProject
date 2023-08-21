@@ -37,7 +37,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -61,7 +60,7 @@ class EdittingPage : ComponentActivity() {
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 //엑티비티가 이동되면서 데이터를 로드하는데 그과정에서 처음에 noteList는 emptylist값을 갖고 있고 데이터가 안들어옴
                 //그러면서 밑의 코드들이 작동
-                val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
+//                val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 val targetUid = intent.getIntExtra("Uid", 0)
                 val title = intent.getStringExtra("title") ?: "제목"
                 val script = intent.getStringExtra("script") ?: ""
@@ -74,15 +73,16 @@ class EdittingPage : ComponentActivity() {
                 var isRecognitionEnabled by remember { mutableStateOf(true) }
 
                 //데이터가 로드되지 않은 상태에서 noteList에 uid를 찾기 때문에 foundNote2는 null이 됨
-                val foundNote2 = noteList.find { it.uid == targetUid }
+                val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
+//                val foundNote = noteList.find { it.uid == targetUid }
 
                 //foundNote2는 null이기 때문에 uriList는 결과적으로 emptyList값으로 처음에 저장됨
                 //그러나 데이터가 로드된 이후에는 noteList가 db에 값을 가져오게 되면서 foundNote2값에 변동이 생김
                 //remember(key)는 키값에 변경이있을시 람다식 내부의 식을 한번 돌려주는 스코프임
                 //그러므로 foundNote2에 값이 변동되었을때 람다식이 발동하면서 selectUris값이 바뀌게 됨
                 //그이후 코드동작에서 또한번 foundNote2값이 변동이되면 selectUris값이 변동될것임.
-                var selectUris by remember(foundNote2) {
-                    val selectedUrisList = foundNote2?.imageListString
+                var selectUris by remember(foundNote) {
+                    val selectedUrisList = foundNote?.imageListString
                     val uriList: List<Uri?>? =
                         selectedUrisList?.map { uriString -> Uri.parse(uriString) }
                     mutableStateOf<List<Uri?>>(uriList ?: emptyList())
@@ -148,36 +148,35 @@ class EdittingPage : ComponentActivity() {
                                     .clickable(enabled = isRecognitionEnabled) {
                                         if (uriStringList != null) {
                                             scope.launch(Dispatchers.IO) {
-                                                foundNote2?.title = editNoteTitle
-                                                foundNote2?.script = editNoteText
-                                                foundNote2?.imageListString = uriStringList
-                                                if (foundNote2 != null) {
+                                                foundNote?.title = editNoteTitle
+                                                foundNote?.script = editNoteText
+                                                foundNote?.imageListString = uriStringList
+                                                if (foundNote != null) {
                                                     db
                                                         .noteDao()
-                                                        .update(foundNote2)
+                                                        .update(foundNote!!)
                                                 }
                                             }
                                             val intent =
                                                 Intent(context, ShowTextPage::class.java)
-                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            intent.putExtra("Uid", foundNote!!.uid)
                                             startActivity(intent)
                                         } else {
                                             scope.launch(Dispatchers.IO) {
-                                                foundNote2?.title = editNoteTitle
-                                                foundNote2?.script = editNoteText
-                                                foundNote2?.imageListString = null
-                                                if (foundNote2 != null) {
+                                                foundNote?.title = editNoteTitle
+                                                foundNote?.script = editNoteText
+                                                foundNote?.imageListString = null
+                                                if (foundNote != null) {
                                                     db
                                                         .noteDao()
-                                                        .update(foundNote2)
+                                                        .update(foundNote!!)
                                                 }
                                             }
                                             val intent = Intent(context, ShowTextPage::class.java)
-                                            intent.putExtra("Uid", foundNote2!!.uid)
+                                            intent.putExtra("Uid", foundNote!!.uid)
                                             startActivity(intent)
                                         }
                                     }
-
                             )
                         }
                         Divider()

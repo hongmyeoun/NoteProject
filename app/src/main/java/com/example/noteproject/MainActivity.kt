@@ -2,6 +2,7 @@ package com.example.noteproject
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -116,6 +118,7 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
 
                 val navController = rememberNavController()
+
                 NavHost(navController = navController, startDestination = "main") {
                     composable("main") {
                         Box() {
@@ -272,131 +275,142 @@ class MainActivity : ComponentActivity() {
 
                     }
                     composable("search") {
-                        Box(
+                        NoteSearchPage(navController, noteList, context)
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun NoteSearchPage(
+    navController: NavHostController,
+    noteList: List<Note>,
+    context: Context
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        var searchText by remember { mutableStateOf("") }
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.back),
+                    contentDescription = "Back Button",
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .size(40.dp)
+                        .clickable { navController.navigate("main") }
+                )
+                TextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = {
+                        Text(
+                            text = "검색",
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 25.sp,
+                            fontFamily = fontFamily()
+                        )
+                    },
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    textStyle = TextStyle(
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = fontFamily()
+                    )
+                )
+                val speechRecognizerLauncher =
+                    rememberLauncherForActivityResult(
+                        ActivityResultContracts.StartActivityForResult()
+                    ) { result ->
+                        if (result.resultCode == RESULT_OK) {
+                            val data: Intent? = result.data
+                            val results =
+                                data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                            if (!results.isNullOrEmpty()) {
+                                searchText = results[0]
+                            }
+                        }
+                    }
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_mic_24),
+                    contentDescription = "STT",
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .size(height = 30.dp, width = 40.dp)
+                        .clickable() {
+                            val intent =
+                                Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                            intent.putExtra(
+                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                            )
+                            speechRecognizerLauncher.launch(intent)
+                        }
+                )
+            }
+            val searchResult =
+                remember(searchText) { searchNotes(searchText, noteList) }
+
+            if (searchText.isNotEmpty()) {
+                LazyColumn(modifier = Modifier.fillMaxHeight()) {
+                    val columns = 3
+                    val chunkedNoteList = searchResult.chunked(columns)
+
+                    items(chunkedNoteList.size) { rowIndex ->
+                        Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            var searchText by remember { mutableStateOf("") }
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.back),
-                                        contentDescription = "Back Button",
-                                        modifier = Modifier
-                                            .padding(10.dp)
-                                            .size(40.dp)
-                                            .clickable { navController.navigate("main") }
-                                    )
-                                    TextField(
-                                        value = searchText,
-                                        onValueChange = { searchText = it },
-                                        placeholder = {
-                                            Text(
-                                                text = "검색",
-                                                fontStyle = FontStyle.Italic,
-                                                fontSize = 25.sp,
-                                                fontFamily = fontFamily()
+                            for (note in chunkedNoteList[rowIndex]) {
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            val intent = Intent(
+                                                context,
+                                                ShowTextPage::class.java
                                             )
+                                            intent.putExtra("Uid", note.uid)
+                                            context.startActivity(intent)
                                         },
-                                        colors = TextFieldDefaults.textFieldColors(
-                                            containerColor = Color.Transparent,
-                                            focusedIndicatorColor = Color.Transparent,
-                                            unfocusedIndicatorColor = Color.Transparent
-                                        ),
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1,
-                                        textStyle = TextStyle(
-                                            fontSize = 25.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = fontFamily()
-                                        )
-                                    )
-                                    val speechRecognizerLauncher =
-                                        rememberLauncherForActivityResult(
-                                            ActivityResultContracts.StartActivityForResult()
-                                        ) { result ->
-                                            if (result.resultCode == RESULT_OK) {
-                                                val data: Intent? = result.data
-                                                val results =
-                                                    data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                                                if (!results.isNullOrEmpty()) {
-                                                    searchText = results[0]
-                                                }
-                                            }
-                                        }
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.baseline_mic_24),
-                                        contentDescription = "STT",
-                                        modifier = Modifier
-                                            .padding(10.dp)
-                                            .size(height = 30.dp, width = 40.dp)
-                                            .clickable() {
-                                                val intent =
-                                                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                                intent.putExtra(
-                                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                                )
-                                                speechRecognizerLauncher.launch(intent)
-                                            }
-                                    )
-                                }
-                                val searchResult =
-                                    remember(searchText) { searchNotes(searchText, noteList) }
-
-                                if (searchText.isNotEmpty()) {
-                                    LazyColumn(modifier = Modifier.fillMaxHeight()) {
-                                        val columns = 3
-                                        val chunkedNoteList = searchResult.chunked(columns)
-
-                                        items(chunkedNoteList.size) { rowIndex ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 4.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                for (note in chunkedNoteList[rowIndex]) {
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .weight(1f)
-                                                            .clickable {
-                                                                val intent = Intent(
-                                                                    context,
-                                                                    ShowTextPage::class.java
-                                                                )
-                                                                intent.putExtra("Uid", note.uid)
-                                                                context.startActivity(intent)
-                                                            },
-                                                        horizontalAlignment = Alignment.CenterHorizontally
-                                                    ) {
-                                                        SearchNoteBox(note, context, searchText)
-                                                        SearchingTitle(note, searchText)
-                                                        NoteDate(note)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(10.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(text = "검색으로 노트찾기")
-                                    }
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    SearchNoteBox(note, context, searchText)
+                                    SearchingTitle(note, searchText)
+                                    NoteDate(note)
                                 }
                             }
                         }
                     }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "검색으로 노트찾기")
                 }
             }
         }
@@ -544,7 +558,7 @@ private fun SearchingTitle(note: Note, searchText: String) {
         val index = title.indexOf(searchText, ignoreCase = true)
         if (index != -1) {
             append(title.substring(0, index))
-            withStyle(style = SpanStyle(background = Color(0xE6FFAE38))) {
+            withStyle(style = SpanStyle(background = Color.Yellow)) {
                 append(title.substring(index, index + searchText.length))
             }
             append(title.substring(index + searchText.length))
@@ -583,7 +597,7 @@ private fun SearchingScript(note: Note, context: Context, searchText: String) {
         val index = script.indexOf(searchText, ignoreCase = true)
         if (index != -1) {
             append(script.substring(0, index))
-            withStyle(style = SpanStyle(background = Color(0xE6FFAE38))) {
+            withStyle(style = SpanStyle(background = Color.Yellow)) {
                 append(script.substring(index, index + searchText.length))
             }
             append(script.substring(index + searchText.length))

@@ -38,9 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,12 +74,12 @@ class ShowTextPage : ComponentActivity() {
             NoteProjectTheme {
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
-                val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 val targetUid = intent.getIntExtra("Uid", 0)
+                //State<Note?>라는 state를 가져와서 사용하는것인데 state에 접근할때는 value를 사용한다. 하지만 지금 상황은 바로 가져다 쓸것이므로 by를 사용해 바로 객체를 넘겨받는다.
+                //initial = null인 부분은 초기값 즉 상태가 변하기 전까지 값이 없다는 뜻이다.
+                val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
 
                 val scope = rememberCoroutineScope()
-
-                val foundNote = noteList.find { it.uid == targetUid }
 
                 val selectedUrisList = foundNote?.imageListString
                 val uriList: List<Uri?>? =
@@ -104,7 +102,7 @@ class ShowTextPage : ComponentActivity() {
                             fontFamily = fontFamily()
                         )
                         if (foundNote != null) {
-                            TTSComponent(foundNote.script!!, textToSpeech)
+                            TTSComponent(foundNote?.script?: "", textToSpeech)
                         }
                         EditIconButton(context, foundNote)
                         DeleteIconButton(scope, db, foundNote, context)
@@ -198,7 +196,7 @@ private fun EditIconButton(
 }
 
 @Composable
-private fun BackIconButton(context: Context) {
+fun BackIconButton(context: Context) {
     Icon(
         painter = painterResource(id = R.drawable.back),
         contentDescription = "Back Button",

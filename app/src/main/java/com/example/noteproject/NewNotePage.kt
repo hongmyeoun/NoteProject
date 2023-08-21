@@ -1,5 +1,6 @@
 package com.example.noteproject
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.example.noteproject.data.Note
 import com.example.noteproject.data.NoteAppDatabase
 import com.example.noteproject.ui.theme.NoteProjectTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -69,9 +72,6 @@ class NewNotePage : ComponentActivity() {
                 var noteTitle by remember { mutableStateOf("") }
                 var noteText by remember { mutableStateOf("") }
 
-                var recognizedText by remember { mutableStateOf("") }
-                var isRecognitionEnabled by remember { mutableStateOf(true) }
-
                 var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickMultipleVisualMedia(),
@@ -90,6 +90,9 @@ class NewNotePage : ComponentActivity() {
                 } else {
                     null
                 }
+
+                var recognizedText by remember { mutableStateOf("") }
+                var isRecognitionEnabled by remember { mutableStateOf(true) }
                 val speechRecognizerLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
@@ -102,6 +105,7 @@ class NewNotePage : ComponentActivity() {
                         }
                     }
                 }
+
                 Box {
                     Column {
                         Row(
@@ -109,20 +113,22 @@ class NewNotePage : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.back),
-                                contentDescription = "Back Button",
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .size(40.dp)
-                                    .clickable {
-                                        val intent = Intent(context, MainActivity::class.java)
-                                        context.startActivity(intent)
-                                    }
-                            )
+                            BackIconButton(context)
+//                            Icon(
+//                                painter = painterResource(id = R.drawable.back),
+//                                contentDescription = "Back Button",
+//                                modifier = Modifier
+//                                    .padding(10.dp)
+//                                    .size(40.dp)
+//                                    .clickable {
+//                                        val intent = Intent(context, MainActivity::class.java)
+//                                        context.startActivity(intent)
+//                                    }
+//                            )
                             TextField(
                                 value = noteTitle,
                                 onValueChange = { noteTitle = it },
+                                modifier = Modifier.weight(1f),
                                 placeholder = {
                                     Text(
                                         text = "제목",
@@ -136,7 +142,6 @@ class NewNotePage : ComponentActivity() {
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent
                                 ),
-                                modifier = Modifier.weight(1f),
                                 maxLines = 1,
                                 textStyle = TextStyle(
                                     fontSize = 25.sp,
@@ -144,45 +149,15 @@ class NewNotePage : ComponentActivity() {
                                     fontFamily = fontFamily()
                                 )
                             )
-                            Icon(
-                                painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
-                                contentDescription = "Save",
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .size(height = 30.dp, width = 40.dp)
-                                    .clickable(enabled = isRecognitionEnabled) {
-                                        val currentDate = SimpleDateFormat(
-                                            "yy.MM.dd HH:mm", Locale.getDefault()
-                                        ).format(
-                                            Date()
-                                        )
-                                        if (uriStringList != null) {
-                                            val newNote = Note(
-                                                title = noteTitle,
-                                                script = noteText,
-                                                createdDate = currentDate,
-                                                imageListString = uriStringList
-                                            )
-                                            scope.launch(Dispatchers.IO) {
-                                                db
-                                                    .noteDao()
-                                                    .insertAll(newNote)
-                                            }
-                                        }else{
-                                            val newNote = Note(
-                                                title = noteTitle,
-                                                script = noteText,
-                                                createdDate = currentDate
-                                            )
-                                            scope.launch(Dispatchers.IO) {
-                                                db
-                                                    .noteDao()
-                                                    .insertAll(newNote)
-                                            }
-                                        }
-                                        val intent = Intent(context, MainActivity::class.java)
-                                        context.startActivity(intent)
-                                    })
+                            SaveIconButton(
+                                isRecognitionEnabled,
+                                uriStringList,
+                                noteTitle,
+                                noteText,
+                                scope,
+                                db,
+                                context
+                            )
                         }
                         Divider()
                         LazyRow() {
@@ -276,4 +251,56 @@ class NewNotePage : ComponentActivity() {
             }
         }
     }
+
+}
+
+@Composable
+private fun SaveIconButton(
+    isRecognitionEnabled: Boolean,
+    uriStringList: List<String?>?,
+    noteTitle: String,
+    noteText: String,
+    scope: CoroutineScope,
+    db: NoteAppDatabase,
+    context: Context
+) {
+    Icon(
+        painter = painterResource(id = if (isRecognitionEnabled) R.drawable.baseline_save_24 else R.drawable.baseline_not_interested_24),
+        contentDescription = "Save",
+        modifier = Modifier
+            .padding(10.dp)
+            .size(height = 30.dp, width = 40.dp)
+            .clickable(enabled = isRecognitionEnabled) {
+                val currentDate = SimpleDateFormat(
+                    "yy.MM.dd HH:mm", Locale.getDefault()
+                ).format(
+                    Date()
+                )
+                if (uriStringList != null) {
+                    val newNote = Note(
+                        title = noteTitle,
+                        script = noteText,
+                        createdDate = currentDate,
+                        imageListString = uriStringList
+                    )
+                    scope.launch(Dispatchers.IO) {
+                        db
+                            .noteDao()
+                            .insertAll(newNote)
+                    }
+                } else {
+                    val newNote = Note(
+                        title = noteTitle,
+                        script = noteText,
+                        createdDate = currentDate
+                    )
+                    scope.launch(Dispatchers.IO) {
+                        db
+                            .noteDao()
+                            .insertAll(newNote)
+                    }
+                }
+                val intent = Intent(context, MainActivity::class.java)
+                context.startActivity(intent)
+            })
 }
