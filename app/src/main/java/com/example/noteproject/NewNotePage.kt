@@ -64,88 +64,159 @@ class NewNotePage : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             NoteProjectTheme {
-                val context = LocalContext.current
-                val db = remember { NoteAppDatabase.getDatabase(context) }
-                val scope = rememberCoroutineScope()
-
-                var noteTitle by remember { mutableStateOf("") }
-                var noteText by remember { mutableStateOf("") }
-
-                var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
-                val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
-                    selectUris.map { uri -> uri.toString() }
-                } else {
-                    null
-                }
-
-                var recognizedText by remember { mutableStateOf("") }
-                var isRecognitionEnabled by remember { mutableStateOf(true) }
-
-
-                Box {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            BackIconButton()
-                            NoteTitle(
-                                noteTitle = noteTitle,
-                                onChange = { noteTitle = it },
-                                modifier = Modifier.weight(1f)
-                            )
-                            SaveIconButton(isRecognitionEnabled, uriStringList, noteTitle, noteText, scope, db)
-                        }
-                        Divider()
-                        ShowSelectedImage(selectUris = selectUris, onClickImage = { selectUris -= it })
-                        NoteScript(
-                            noteText = noteText,
-                            recognizedText = recognizedText,
-                            onChange = {
-                                noteText = it
-                                recognizedText = ""
-                                isRecognitionEnabled = true
-                            })
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 30.dp, bottom = 50.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column {
-                            GetImagesIconButton(selectUris = selectUris, onResult = { selectUris += it })
-                            GetVoiceTextIconButtons(
-                                isRecognitionEnabled = isRecognitionEnabled,
-                                onResult = {
-                                    if (it.resultCode == ComponentActivity.RESULT_OK) {
-                                        val data: Intent? = it.data
-                                        val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                                        if (!results.isNullOrEmpty()) {
-                                            recognizedText = " ${results[0]}"
-                                            isRecognitionEnabled = false
-                                        }
-                                    }
-                                }
-                            )
-                            CustomIcon(
-                                id = R.drawable.baseline_restart_alt_24,
-                                contentDescription = "recognized reset",
-                                onClicked = {
-                                    recognizedText = ""
-                                    isRecognitionEnabled = true
-                                }
-                            )
-                        }
-                    }
-                }
+                ThisNewNoteMakePage()
             }
         }
     }
 }
 @Composable
-fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult:(ActivityResult)->Unit){
+private fun ThisNewNoteMakePage() {
+    val context = LocalContext.current
+    val db = remember { NoteAppDatabase.getDatabase(context) }
+    val scope = rememberCoroutineScope()
+
+    var noteTitle by remember { mutableStateOf("") }
+    var noteText by remember { mutableStateOf("") }
+
+    var selectUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
+    val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
+        selectUris.map { uri -> uri.toString() }
+    } else {
+        null
+    }
+
+    var recognizedText by remember { mutableStateOf("") }
+    var isRecognitionEnabled by remember { mutableStateOf(true) }
+
+
+    Box {
+        NewNoteLayout(
+            noteTitle = noteTitle,
+            noteText = noteText,
+            isRecognitionEnabled = isRecognitionEnabled,
+            uriStringList = uriStringList,
+            scope = scope,
+            db = db,
+            selectUris = selectUris,
+            recognizedText = recognizedText,
+            onTitleChange = { noteTitle = it },
+            onClicked = { selectUris -= it },
+            onScriptChange = {
+                noteText = it
+                recognizedText = ""
+                isRecognitionEnabled = true
+            }
+        )
+        ImageAndVoiceBox(
+            modifier = Modifier.align(Alignment.BottomEnd),
+            selectUris = selectUris,
+            isRecognitionEnabled = isRecognitionEnabled,
+            onImageResult = {
+                selectUris += it
+                val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                for (uri in selectUris) {
+                    uri?.let {
+                        context.contentResolver.takePersistableUriPermission(uri, flag)
+                    }
+                }
+            },
+            onVoiceResult = {
+                if (it.resultCode == ComponentActivity.RESULT_OK) {
+                    val data: Intent? = it.data
+                    val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    if (!results.isNullOrEmpty()) {
+                        recognizedText = " ${results[0]}"
+                        isRecognitionEnabled = false
+                    }
+                }
+            },
+            onResetClicked = {
+                recognizedText = ""
+                isRecognitionEnabled = true
+            }
+        )
+    }
+}
+
+
+@Composable
+fun ImageAndVoiceBox(
+    modifier: Modifier,
+    selectUris: List<Uri?>,
+    isRecognitionEnabled: Boolean,
+    onImageResult: (List<Uri?>) -> Unit,
+    onVoiceResult: (ActivityResult) -> Unit,
+    onResetClicked: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .padding(end = 30.dp, bottom = 50.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column {
+            GetImagesIconButton(
+                onResult = {
+                    onImageResult(it)
+                })
+            GetVoiceTextIconButtons(
+                isRecognitionEnabled = isRecognitionEnabled,
+                onResult = {
+                    onVoiceResult(it)
+                }
+            )
+            CustomIcon(
+                id = R.drawable.baseline_restart_alt_24,
+                contentDescription = "recognized reset",
+                onClicked = {
+                    onResetClicked()
+                }
+            )
+        }
+    }
+}
+
+
+@Composable
+fun NewNoteLayout(
+    noteTitle: String,
+    noteText: String,
+    isRecognitionEnabled: Boolean,
+    uriStringList: List<String?>?,
+    scope: CoroutineScope,
+    db: NoteAppDatabase,
+    selectUris: List<Uri?>,
+    recognizedText: String,
+    onTitleChange: (String) -> Unit,
+    onClicked: (Uri) -> Unit,
+    onScriptChange: (String) -> Unit
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            BackIconButton()
+            NoteTitle(
+                noteTitle = noteTitle,
+                onChange = { onTitleChange(it) },
+                modifier = Modifier.weight(1f)
+            )
+            SaveIconButton(isRecognitionEnabled, uriStringList, noteTitle, noteText, scope, db)
+        }
+        Divider()
+        ShowSelectedImage(selectUris = selectUris, onClickImage = { onClicked(it) })
+        NoteScript(
+            noteText = noteText,
+            recognizedText = recognizedText,
+            onChange = {
+                onScriptChange(it)
+            })
+    }
+}
+
+@Composable
+fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult: (ActivityResult) -> Unit) {
     val speechRecognizerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -167,20 +238,11 @@ fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult:(ActivityRes
 }
 
 @Composable
-fun GetImagesIconButton(selectUris: List<Uri?>, onResult: (List<Uri?>) -> Unit){
-    val context = LocalContext.current
+fun GetImagesIconButton(onResult: (List<Uri?>) -> Unit) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
         onResult = { uris ->
-            //기존에 골랐던 사진에 추가로 들어가기
             onResult(uris)
-            //selectUris는 list이기 때문에 권한을 하나하나 다줘야 된다.
-            val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            for (uri in selectUris) {
-                uri?.let {
-                    context.contentResolver.takePersistableUriPermission(uri, flag)
-                }
-            }
         }
     )
     CustomIcon(
