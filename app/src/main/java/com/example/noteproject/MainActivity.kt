@@ -208,6 +208,7 @@ private fun NoteBottomLayout(
                     modifier = Modifier.clickable {
                         navController.navigate("search")
                     })
+                Spacer(modifier = Modifier.size(9.dp))
                 Row(modifier = Modifier.clickable {
                     sortOption = when (sortOption) {
                         SortOption.TITLE.name -> SortOption.CREATED_DATE.name
@@ -234,6 +235,7 @@ private fun NoteBottomLayout(
                         upAndDownSortEdit(sharedPref, upSort)
                     }
                 )
+                Spacer(modifier = Modifier.size(6.dp))
             }
         }
 

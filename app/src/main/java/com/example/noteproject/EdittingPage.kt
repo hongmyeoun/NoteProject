@@ -90,7 +90,14 @@ class EdittingPage : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            BackIconButton()
+                            EditPageBackIconButton(
+                                scope = scope,
+                                foundNote = foundNote,
+                                editNoteTitle = editNoteTitle,
+                                editNoteText = editNoteText,
+                                uriStringList = uriStringList,
+                                db = db
+                            )
                             NoteTitle(
                                 noteTitle = editNoteTitle,
                                 onChange = { editNoteTitle = it },
@@ -118,8 +125,6 @@ class EdittingPage : ComponentActivity() {
                             .padding(end = 30.dp, bottom = 50.dp),
                         contentAlignment = Alignment.Center
                     ) {
-
-
                         Column {
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.PickMultipleVisualMedia(),
@@ -206,7 +211,43 @@ private fun EditDoneIconButton(
                     foundNote?.script = editNoteText
                     foundNote?.imageListString = uriStringList
                     if (foundNote != null) {
-                        db.noteDao().update(foundNote)
+                        db
+                            .noteDao()
+                            .update(foundNote)
+                    }
+                }
+                val intent = Intent(context, ShowTextPage::class.java)
+                intent.putExtra("Uid", foundNote!!.uid)
+                context.startActivity(intent)
+            }
+    )
+}
+
+@Composable
+fun EditPageBackIconButton(
+    scope: CoroutineScope,
+    foundNote: Note?,
+    editNoteTitle: String,
+    editNoteText: String,
+    uriStringList: List<String?>?,
+    db: NoteAppDatabase,
+) {
+    val context = LocalContext.current
+    Icon(
+        painter = painterResource(id = R.drawable.back),
+        contentDescription = "Back Button",
+        modifier = Modifier
+            .padding(10.dp)
+            .size(40.dp)
+            .clickable {
+                scope.launch(Dispatchers.IO) {
+                    foundNote?.title = editNoteTitle
+                    foundNote?.script = editNoteText
+                    foundNote?.imageListString = uriStringList
+                    if (foundNote != null) {
+                        db
+                            .noteDao()
+                            .update(foundNote)
                     }
                 }
                 val intent = Intent(context, ShowTextPage::class.java)

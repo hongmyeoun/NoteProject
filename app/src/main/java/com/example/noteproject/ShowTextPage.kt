@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -85,46 +86,50 @@ class ShowTextPage : ComponentActivity() {
                 val uriList: List<Uri?>? =
                     selectedUrisList?.map { uriString -> Uri.parse(uriString) }
 
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        BackIconButton()
-                        Text(
-                            text = foundNote?.title ?: "제목",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 25.sp,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontFamily = fontFamily()
-                        )
-                        if (foundNote != null) {
-                            TTSComponent(foundNote?.script?: "", textToSpeech)
+                Box {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            BackIconButton()
+                            Text(
+                                text = foundNote?.title ?: "제목",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 25.sp,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontFamily = fontFamily()
+                            )
+                            if (foundNote != null) {
+                                TTSComponent(foundNote?.script ?: "", textToSpeech)
+                            }
+                            EditIconButton(context, foundNote)
+                            DeleteIconButton(scope, db, foundNote, context)
                         }
-                        EditIconButton(context, foundNote)
-                        DeleteIconButton(scope, db, foundNote, context)
+                        Divider()
+                        if (!uriList.isNullOrEmpty()) {
+                            ExpandableImageRow(uriList)
+                        }
+                        ShowNoteScript(foundNote)
                     }
-                    Divider()
-                    if (!uriList.isNullOrEmpty()) {
-                        ExpandableImageRow(uriList)
-                    }
-                    ShowNoteScript(foundNote)
                 }
             }
         }
     }
+
     override fun onDestroy() {
         super.onDestroy()
         textToSpeech.stop()
         textToSpeech.shutdown()
     }
 }
+
 @Composable
 private fun ShowNoteScript(foundNote: Note?) {
-    LazyColumn() {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             if (foundNote?.script != null) {
                 SelectionContainer {
@@ -173,7 +178,7 @@ private fun DeleteIconButton(
                 val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             })
-    Spacer(modifier = Modifier.size(3.dp))
+    Spacer(modifier = Modifier.size(9.dp))
 }
 
 @Composable
@@ -191,7 +196,7 @@ private fun EditIconButton(
             intent.putExtra("script", foundNote.script)
             context.startActivity(intent)
         })
-    Spacer(modifier = Modifier.size(3.dp))
+    Spacer(modifier = Modifier.size(9.dp))
 
 }
 
@@ -220,8 +225,9 @@ fun TTSComponent(text: String, tts: TextToSpeech) {
             .clickable {
                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
             }
+            .size(25.dp)
     )
-    Spacer(modifier = Modifier.size(3.dp))
+    Spacer(modifier = Modifier.size(9.dp))
 }
 
 @Composable
