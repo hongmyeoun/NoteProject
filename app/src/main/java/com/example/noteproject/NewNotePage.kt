@@ -109,7 +109,6 @@ private fun ThisNewNoteMakePage() {
         )
         ImageAndVoiceBox(
             modifier = Modifier.align(Alignment.BottomEnd),
-            selectUris = selectUris,
             isRecognitionEnabled = isRecognitionEnabled,
             onImageResult = {
                 selectUris += it
@@ -142,7 +141,6 @@ private fun ThisNewNoteMakePage() {
 @Composable
 fun ImageAndVoiceBox(
     modifier: Modifier,
-    selectUris: List<Uri?>,
     isRecognitionEnabled: Boolean,
     onImageResult: (List<Uri?>) -> Unit,
     onVoiceResult: (ActivityResult) -> Unit,
