@@ -70,61 +70,73 @@ class ShowTextPage : ComponentActivity() {
                 }
             }
         }
-
         setContent {
             NoteProjectTheme {
-                val context = LocalContext.current
-                val db = remember { NoteAppDatabase.getDatabase(context) }
                 val targetUid = intent.getIntExtra("Uid", 0)
-                //State<Note?>라는 state를 가져와서 사용하는것인데 state에 접근할때는 value를 사용한다. 하지만 지금 상황은 바로 가져다 쓸것이므로 by를 사용해 바로 객체를 넘겨받는다.
-                //initial = null인 부분은 초기값 즉 상태가 변하기 전까지 값이 없다는 뜻이다.
-                val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
-
-                val scope = rememberCoroutineScope()
-
-                val selectedUrisList = foundNote?.imageListString
-                val uriList: List<Uri?>? =
-                    selectedUrisList?.map { uriString -> Uri.parse(uriString) }
-
-                Box {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            BackIconButton()
-                            Text(
-                                text = foundNote?.title ?: "제목",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 25.sp,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontFamily = fontFamily()
-                            )
-                            if (foundNote != null) {
-                                TTSComponent(foundNote?.script ?: "", textToSpeech)
-                            }
-                            EditIconButton(context, foundNote)
-                            DeleteIconButton(scope, db, foundNote, context)
-                        }
-                        Divider()
-                        if (!uriList.isNullOrEmpty()) {
-                            ExpandableImageRow(uriList)
-                        }
-                        ShowNoteScript(foundNote)
-                    }
-                }
+                ThisShowPage(targetUid = targetUid, textToSpeech = textToSpeech)
             }
         }
     }
-
     override fun onDestroy() {
         super.onDestroy()
         textToSpeech.stop()
         textToSpeech.shutdown()
     }
+}
+
+@Composable
+fun ThisShowPage(
+    targetUid: Int,
+    textToSpeech: TextToSpeech,
+){
+    val context = LocalContext.current
+    val db = remember { NoteAppDatabase.getDatabase(context) }
+    //State<Note?>라는 state를 가져와서 사용하는것인데 state에 접근할때는 value를 사용한다. 하지만 지금 상황은 바로 가져다 쓸것이므로 by를 사용해 바로 객체를 넘겨받는다.
+    //initial = null인 부분은 초기값 즉 상태가 변하기 전까지 값이 없다는 뜻이다.
+    val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
+
+    val scope = rememberCoroutineScope()
+
+    val selectedUrisList = foundNote?.imageListString
+    val uriList: List<Uri?>? =
+        selectedUrisList?.map { uriString -> Uri.parse(uriString) }
+
+    Box {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                BackIconButton()
+                ShowTitle(foundNote, Modifier.weight(1f))
+                if (foundNote != null) {
+                    TTSIconButton(foundNote?.script ?: "", textToSpeech)
+                }
+                EditIconButton(foundNote)
+                DeleteIconButton(scope, db, foundNote)
+            }
+            Divider()
+            if (!uriList.isNullOrEmpty()) {
+                ExpandableImageRow(uriList)
+            }
+            ShowNoteScript(foundNote)
+        }
+    }
+
+}
+
+@Composable
+private fun ShowTitle(foundNote: Note?, modifier: Modifier){
+    Text(
+        text = foundNote?.title ?: "제목",
+        fontWeight = FontWeight.Bold,
+        fontSize = 25.sp,
+        modifier = modifier,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        fontFamily = fontFamily()
+    )
 }
 
 @Composable
@@ -163,18 +175,14 @@ private fun DeleteIconButton(
     scope: CoroutineScope,
     db: NoteAppDatabase,
     foundNote: Note?,
-    context: Context
 ) {
+    val context = LocalContext.current
     Icon(
         painter = painterResource(id = R.drawable.delete),
         contentDescription = "Delete",
         modifier = Modifier
             .clickable {
-                scope.launch(Dispatchers.IO) {
-                    db
-                        .noteDao()
-                        .delete(foundNote!!) // 선택한 노트를 삭제
-                }
+                scope.launch(Dispatchers.IO) { db.noteDao().delete(foundNote!!) }
                 val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             })
@@ -183,9 +191,9 @@ private fun DeleteIconButton(
 
 @Composable
 private fun EditIconButton(
-    context: Context,
     foundNote: Note?
 ) {
+    val context = LocalContext.current
     Icon(
         imageVector = Icons.Default.Edit,
         contentDescription = "edit",
@@ -217,7 +225,7 @@ fun BackIconButton() {
 }
 
 @Composable
-fun TTSComponent(text: String, tts: TextToSpeech) {
+fun TTSIconButton(text: String, tts: TextToSpeech) {
     Icon(
         painter = painterResource(id = R.drawable.volume),
         contentDescription = "tts play",

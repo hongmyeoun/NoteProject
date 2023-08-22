@@ -113,9 +113,7 @@ private fun ThisNewNoteMakePage() {
                 selectUris += it
                 val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 for (uri in selectUris) {
-                    uri?.let {
-                        context.contentResolver.takePersistableUriPermission(uri, flag)
-                    }
+                    uri?.let { context.contentResolver.takePersistableUriPermission(uri, flag) }
                 }
             },
             onVoiceResult = {
@@ -152,21 +150,15 @@ fun ImageAndVoiceBox(
     ) {
         Column {
             GetImagesIconButton(
-                onResult = {
-                    onImageResult(it)
-                })
+                onResult = { onImageResult(it) })
             GetVoiceTextIconButtons(
                 isRecognitionEnabled = isRecognitionEnabled,
-                onResult = {
-                    onVoiceResult(it)
-                }
+                onResult = { onVoiceResult(it) }
             )
             CustomIcon(
                 id = R.drawable.baseline_restart_alt_24,
                 contentDescription = "recognized reset",
-                onClicked = {
-                    onResetClicked()
-                }
+                onClicked = { onResetClicked() }
             )
         }
     }
@@ -206,9 +198,7 @@ private fun NewNoteLayout(
         NoteScript(
             noteText = noteText,
             recognizedText = recognizedText,
-            onChange = {
-                onScriptChange(it)
-            })
+            onChange = { onScriptChange(it) })
     }
 }
 
@@ -216,9 +206,7 @@ private fun NewNoteLayout(
 fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult: (ActivityResult) -> Unit) {
     val speechRecognizerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        onResult(result)
-    }
+    ) { result -> onResult(result) }
     CustomIcon(
         id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
         contentDescription = "mic",
@@ -238,18 +226,12 @@ fun GetVoiceTextIconButtons(isRecognitionEnabled: Boolean, onResult: (ActivityRe
 fun GetImagesIconButton(onResult: (List<Uri?>) -> Unit) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
-        onResult = { uris ->
-            onResult(uris)
-        }
+        onResult = { uris -> onResult(uris) }
     )
     CustomIcon(
         id = R.drawable.image_icon,
         contentDescription = "get image",
-        onClicked = {
-            launcher.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-            )
-        }
+        onClicked = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
     )
 }
 
@@ -310,9 +292,7 @@ fun ShowSelectedImage(selectUris: List<Uri?>, onClickImage: (Uri) -> Unit) {
             uri?.let {
                 val bitmap =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        ImageDecoder.decodeBitmap(
-                            ImageDecoder.createSource(context.contentResolver, uri)
-                        )
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
                     } else {
                         MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                     }
@@ -343,7 +323,6 @@ fun CustomIcon(
         modifier = Modifier
             .clickable(enabled = enabled) { onClicked() }
             .size(50.dp))
-
 }
 
 @Composable
@@ -370,11 +349,7 @@ private fun SaveIconButton(
                     createdDate = currentDate,
                     imageListString = uriStringList
                 )
-                scope.launch(Dispatchers.IO) {
-                    db
-                        .noteDao()
-                        .insertAll(newNote)
-                }
+                scope.launch(Dispatchers.IO) { db.noteDao().insertAll(newNote) }
                 val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             })

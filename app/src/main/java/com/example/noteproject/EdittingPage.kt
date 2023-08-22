@@ -164,11 +164,7 @@ private fun EditDoneIconButton(
                     foundNote?.title = editNoteTitle
                     foundNote?.script = editNoteText
                     foundNote?.imageListString = uriStringList
-                    if (foundNote != null) {
-                        db
-                            .noteDao()
-                            .update(foundNote)
-                    }
+                    if (foundNote != null) { db.noteDao().update(foundNote) }
                 }
                 val intent = Intent(context, ShowTextPage::class.java)
                 intent.putExtra("Uid", foundNote!!.uid)
@@ -198,11 +194,7 @@ private fun EditPageBackIconButton(
                     foundNote?.title = editNoteTitle
                     foundNote?.script = editNoteText
                     foundNote?.imageListString = uriStringList
-                    if (foundNote != null) {
-                        db
-                            .noteDao()
-                            .update(foundNote)
-                    }
+                    if (foundNote != null) { db.noteDao().update(foundNote) }
                 }
                 val intent = Intent(context, ShowTextPage::class.java)
                 intent.putExtra("Uid", foundNote!!.uid)
@@ -255,9 +247,7 @@ private fun EditNoteLayout(
         NoteScript(
             noteText = editNoteText,
             recognizedText = recognizedText,
-            onChange = {
-                onScriptChange(it)
-            })
+            onChange = { onScriptChange(it) })
     }
 
 }
