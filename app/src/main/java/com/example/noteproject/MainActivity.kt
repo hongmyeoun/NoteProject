@@ -20,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -54,7 +56,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -477,7 +478,8 @@ private fun NewNoteIconButton(context: Context) {
 @Composable
 private fun NoteBox(note: Note, context: Context) {
     Card(
-        modifier = Modifier.size(height = 170.dp, width = 110.dp),
+        modifier = Modifier.size(height = 170.dp, width = 110.dp).border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
         NoteScript(note, context)
@@ -486,14 +488,10 @@ private fun NoteBox(note: Note, context: Context) {
 
 @Composable
 private fun SearchNoteBox(note: Note, context: Context, searchText: String) {
-    Box(
-        modifier = Modifier
-            .size(height = 170.dp, width = 120.dp)
-            .shadow(
-                0.3f.dp,
-                shape = RoundedCornerShape(1.dp)
-            )
-            .padding(10.dp)
+    Card(
+        modifier = Modifier.size(height = 170.dp, width = 110.dp).border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        shape = RoundedCornerShape(12.dp)
     ) {
         SearchingScript(note, context, searchText)
     }
@@ -614,7 +612,7 @@ private fun SearchingScript(note: Note, context: Context, searchText: String) {
             append(script)
         }
     }
-    Column {
+    Column(modifier = Modifier.padding(6.dp)) {
         ShowDBImage(note, context)
         Text(
             text = highLightScript,

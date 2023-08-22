@@ -59,7 +59,6 @@ import java.util.Date
 import java.util.Locale
 
 class NewNotePage : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
