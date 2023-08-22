@@ -41,7 +41,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -116,7 +115,7 @@ class MainActivity : ComponentActivity() {
                         NoteMainPage(noteList, navController, scope, db)
                     }
                     composable("search") {
-                        NoteSearchPage(navController, noteList, context)
+                        NoteSearchPage(navController, noteList)
                     }
                 }
             }
@@ -147,10 +146,15 @@ private fun NoteMainPage(
                 .padding(end = 30.dp, bottom = 50.dp),
             contentAlignment = Alignment.Center
         ) {
-            NewNoteIconButton(context)
+            CustomIcon(
+                id = R.drawable.note_add,
+                contentDescription = "newNote",
+                onClicked = {
+                    val intent = Intent(context, NewNotePage::class.java)
+                    context.startActivity(intent)
+                })
         }
     }
-
 }
 
 @Composable
@@ -160,8 +164,7 @@ private fun NoteBottomLayout(
     scope: CoroutineScope,
     db: NoteAppDatabase
 ) {
-    val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = LocalContext.current as? Activity
     val sharedPref =
         remember { activity?.getPreferences(Context.MODE_PRIVATE) }
     var upSort by remember {
@@ -211,7 +214,6 @@ private fun NoteBottomLayout(
                     }
                     titleAndTimeSortEdit(sharedPref, sortOption)
                 }) {
-
                     Icon(
                         painter = painterResource(id = R.drawable.sort),
                         contentDescription = "Sort by title or time"
@@ -247,16 +249,16 @@ private fun NoteBottomLayout(
                 horizontalArrangement = Arrangement.Center
             ) {
                 for (note in chunkedNoteList[rowIndex]) {
-                    NoteItems(context, note, scope, db)
+                    NoteItems(note, scope, db)
                 }
             }
         }
     }
-
 }
 
 @Composable
-private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: NoteAppDatabase) {
+private fun NoteItems(note: Note, scope: CoroutineScope, db: NoteAppDatabase) {
+    val context = LocalContext.current
     var deletPressed by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -290,7 +292,7 @@ private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: N
                 )
             }
         }
-        NoteBox(note, context)
+        NoteBox(note)
         TopTextField(note)
         NoteDate(note)
     }
@@ -298,12 +300,11 @@ private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: N
 
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun NoteSearchPage(
     navController: NavHostController,
     noteList: List<Note>,
-    context: Context
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -385,7 +386,7 @@ private fun NoteSearchPage(
                                         },
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    SearchNoteBox(note, context, searchText)
+                                    SearchNoteBox(note, searchText)
                                     SearchingTitle(note, searchText)
                                     NoteDate(note)
                                 }
@@ -437,21 +438,7 @@ enum class SortOption {
 }
 
 @Composable
-private fun NewNoteIconButton(context: Context) {
-    Icon(
-        painter = painterResource(id = R.drawable.note_add),
-        contentDescription = "newNote",
-        modifier = Modifier
-            .clickable {
-                val intent = Intent(context, NewNotePage::class.java)
-                context.startActivity(intent)
-            }
-            .size(50.dp)
-    )
-}
-
-@Composable
-private fun NoteBox(note: Note, context: Context) {
+private fun NoteBox(note: Note) {
     Card(
         modifier = Modifier
             .size(height = 170.dp, width = 110.dp)
@@ -459,12 +446,12 @@ private fun NoteBox(note: Note, context: Context) {
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
-        NoteScript(note, context)
+        NoteScript(note)
     }
 }
 
 @Composable
-private fun SearchNoteBox(note: Note, context: Context, searchText: String) {
+private fun SearchNoteBox(note: Note, searchText: String) {
     Card(
         modifier = Modifier
             .size(height = 170.dp, width = 110.dp)
@@ -472,7 +459,7 @@ private fun SearchNoteBox(note: Note, context: Context, searchText: String) {
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
-        SearchingScript(note, context, searchText)
+        SearchingScript(note, searchText)
     }
 }
 
@@ -565,9 +552,9 @@ private fun SearchingTitle(note: Note, searchText: String) {
 }
 
 @Composable
-private fun NoteScript(note: Note, context: Context) {
+private fun NoteScript(note: Note) {
     Column(modifier = Modifier.padding(6.dp)) {
-        ShowDBImage(note, context)
+        ShowDBImage(note)
         Text(
             text = note.script!!,
             fontFamily = fontFamily(),
@@ -577,7 +564,7 @@ private fun NoteScript(note: Note, context: Context) {
 }
 
 @Composable
-private fun SearchingScript(note: Note, context: Context, searchText: String) {
+private fun SearchingScript(note: Note, searchText: String) {
     val highLightScript = buildAnnotatedString {
         val script = note.script ?: ""
         val index = script.indexOf(searchText, ignoreCase = true)
@@ -592,7 +579,7 @@ private fun SearchingScript(note: Note, context: Context, searchText: String) {
         }
     }
     Column(modifier = Modifier.padding(6.dp)) {
-        ShowDBImage(note, context)
+        ShowDBImage(note)
         Text(
             text = highLightScript,
             fontFamily = fontFamily(),
@@ -619,7 +606,8 @@ private fun NoteTopLayout(noteList: List<Note>) {
 }
 
 @Composable
-private fun ShowDBImage(note: Note, context: Context) {
+private fun ShowDBImage(note: Note) {
+    val context = LocalContext.current
     val selectedUrisList = note.imageListString
     val uriList: List<Uri?>? =
         selectedUrisList?.map { uriString ->
