@@ -174,7 +174,7 @@ fun ImageAndVoiceBox(
 
 
 @Composable
-fun NewNoteLayout(
+private fun NewNoteLayout(
     noteTitle: String,
     noteText: String,
     isRecognitionEnabled: Boolean,

@@ -628,12 +628,12 @@ private fun SearchingScript(note: Note, context: Context, searchText: String) {
 private fun NoteTopLayout(noteList: List<Note>) {
     Spacer(modifier = Modifier.size(50.dp))
     Text(
-        text = "나의 메모장",
+        text = "메모장 켜라",
         fontSize = 50.sp,
         fontFamily = fontFamily()
     )
     Text(
-        text = "노트 ${noteList.size}개",
+        text = "메모 ${noteList.size}개",
         fontWeight = FontWeight.Light,
         fontSize = 10.sp,
         fontFamily = fontFamily()

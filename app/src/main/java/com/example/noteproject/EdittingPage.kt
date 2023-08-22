@@ -1,14 +1,12 @@
 package com.example.noteproject
 
+import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,147 +43,103 @@ class EdittingPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             NoteProjectTheme {
-                val context = LocalContext.current
-                val db = remember { NoteAppDatabase.getDatabase(context) }
-                //엑티비티가 이동되면서 데이터를 로드하는데 그과정에서 처음에 noteList는 emptylist값을 갖고 있고 데이터가 안들어옴
-                //그러면서 밑의 코드들이 작동
-//                val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
                 val targetUid = intent.getIntExtra("Uid", 0)
                 val title = intent.getStringExtra("title") ?: "제목"
                 val script = intent.getStringExtra("script") ?: ""
-                val scope = rememberCoroutineScope()
-
-                var editNoteTitle by remember { mutableStateOf(title) }
-                var editNoteText by remember { mutableStateOf(script) }
-
-                var recognizedText by remember { mutableStateOf("") }
-                var isRecognitionEnabled by remember { mutableStateOf(true) }
-
-                //데이터가 로드되지 않은 상태에서 noteList에 uid를 찾기 때문에 foundNote2는 null이 됨
-                val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
-//                val title = foundNote?.title?: ""
-//                val foundNote = noteList.find { it.uid == targetUid }
-
-                //foundNote2는 null이기 때문에 uriList는 결과적으로 emptyList값으로 처음에 저장됨
-                //그러나 데이터가 로드된 이후에는 noteList가 db에 값을 가져오게 되면서 foundNote2값에 변동이 생김
-                //remember(key)는 키값에 변경이있을시 람다식 내부의 식을 한번 돌려주는 스코프임
-                //그러므로 foundNote2에 값이 변동되었을때 람다식이 발동하면서 selectUris값이 바뀌게 됨
-                //그이후 코드동작에서 또한번 foundNote2값이 변동이되면 selectUris값이 변동될것임.
-                var selectUris by remember(foundNote) {
-                    val selectedUrisList = foundNote?.imageListString
-                    val uriList: List<Uri?>? =
-                        selectedUrisList?.map { uriString -> Uri.parse(uriString) }
-                    mutableStateOf<List<Uri?>>(uriList ?: emptyList())
-                }
-
-                val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
-                    selectUris.map { uri -> uri.toString() }
-                } else {
-                    null
-                }
-                Box {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            EditPageBackIconButton(
-                                scope = scope,
-                                foundNote = foundNote,
-                                editNoteTitle = editNoteTitle,
-                                editNoteText = editNoteText,
-                                uriStringList = uriStringList,
-                                db = db
-                            )
-                            NoteTitle(
-                                noteTitle = editNoteTitle,
-                                onChange = { editNoteTitle = it },
-                                modifier = Modifier.weight(1f)
-                            )
-                            EditDoneIconButton(isRecognitionEnabled, scope, foundNote, editNoteTitle, editNoteText, uriStringList, db)
-                        }
-                        Divider()
-                        ShowSelectedImage(
-                            selectUris = selectUris,
-                            onClickImage = { selectUris -= it }
-                        )
-                        NoteScript(
-                            noteText = editNoteText,
-                            recognizedText = recognizedText,
-                            onChange = {
-                                editNoteText = it
-                                recognizedText = ""
-                                isRecognitionEnabled = true
-                            })
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 30.dp, bottom = 50.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column {
-                            val launcher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.PickMultipleVisualMedia(),
-                                onResult = { uris ->
-                                    selectUris += uris
-                                    for (uri in selectUris) {
-                                        val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                        if (uri != null) {
-                                            context.contentResolver.takePersistableUriPermission(uri, flag)
-                                        }
-                                    }
-                                }
-                            )
-                            CustomIcon(
-                                id = R.drawable.image_icon,
-                                contentDescription = "get image",
-                                onClicked = {
-                                    launcher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                }
-                            )
-                            val speechRecognizerLauncher = rememberLauncherForActivityResult(
-                                ActivityResultContracts.StartActivityForResult()
-                            ) { result ->
-                                if (result.resultCode == RESULT_OK) {
-                                    val data: Intent? = result.data
-                                    val results =
-                                        data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                                    if (!results.isNullOrEmpty()) {
-                                        recognizedText = " " + results[0]
-                                        isRecognitionEnabled = false
-                                    }
-                                }
-                            }
-                            CustomIcon(
-                                id = if (isRecognitionEnabled) R.drawable.baseline_mic_24 else R.drawable.baseline_mic_off_24,
-                                contentDescription = "mic",
-                                enabled = isRecognitionEnabled,
-                                onClicked = {
-                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                    intent.putExtra(
-                                        RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                    )
-                                    speechRecognizerLauncher.launch(intent)
-                                }
-                            )
-                            CustomIcon(
-                                id = R.drawable.baseline_restart_alt_24,
-                                contentDescription = "recognized reset",
-                                onClicked = {
-                                    recognizedText = ""
-                                    isRecognitionEnabled = true
-                                }
-                            )
-                        }
-                    }
-                }
+                ThisNoteEditPage(targetUid, title, script)
             }
         }
+    }
+}
+
+@Composable
+private fun ThisNoteEditPage(targetUid: Int, title: String, script: String) {
+    val context = LocalContext.current
+    val db = remember { NoteAppDatabase.getDatabase(context) }
+    //엑티비티가 이동되면서 데이터를 로드하는데 그과정에서 처음에 noteList는 emptylist값을 갖고 있고 데이터가 안들어옴
+    //그러면서 밑의 코드들이 작동
+    //                val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
+
+    val scope = rememberCoroutineScope()
+
+    var editNoteTitle by remember { mutableStateOf(title) }
+    var editNoteText by remember { mutableStateOf(script) }
+
+    var recognizedText by remember { mutableStateOf("") }
+    var isRecognitionEnabled by remember { mutableStateOf(true) }
+
+    //데이터가 로드되지 않은 상태에서 noteList에 uid를 찾기 때문에 foundNote2는 null이 됨
+    val foundNote by db.noteDao().getNoteByUid(targetUid).collectAsState(initial = null)
+    //                val title = foundNote?.title?: ""
+    //                val foundNote = noteList.find { it.uid == targetUid }
+
+    //foundNote2는 null이기 때문에 uriList는 결과적으로 emptyList값으로 처음에 저장됨
+    //그러나 데이터가 로드된 이후에는 noteList가 db에 값을 가져오게 되면서 foundNote2값에 변동이 생김
+    //remember(key)는 키값에 변경이있을시 람다식 내부의 식을 한번 돌려주는 스코프임
+    //그러므로 foundNote2에 값이 변동되었을때 람다식이 발동하면서 selectUris값이 바뀌게 됨
+    //그이후 코드동작에서 또한번 foundNote2값이 변동이되면 selectUris값이 변동될것임.
+    var selectUris by remember(foundNote) {
+        val selectedUrisList = foundNote?.imageListString
+        val uriList: List<Uri?>? =
+            selectedUrisList?.map { uriString -> Uri.parse(uriString) }
+        mutableStateOf<List<Uri?>>(uriList ?: emptyList())
+    }
+
+    val uriStringList: List<String?>? = if (selectUris.isNotEmpty()) {
+        selectUris.map { uri -> uri.toString() }
+    } else {
+        null
+    }
+    Box {
+        EditNoteLayout(
+            editNoteTitle = editNoteTitle,
+            editNoteText = editNoteText,
+            isRecognitionEnabled = isRecognitionEnabled,
+            uriStringList = uriStringList,
+            scope = scope,
+            db = db,
+            selectUris = selectUris,
+            recognizedText = recognizedText,
+            foundNote = foundNote,
+            onTitleChange = {
+                editNoteTitle = it
+            },
+            onClicked = {
+                selectUris -= it
+            },
+            onScriptChange = {
+                editNoteText = it
+                recognizedText = ""
+                isRecognitionEnabled = true
+            }
+        )
+        ImageAndVoiceBox(
+            modifier = Modifier.align(Alignment.BottomEnd),
+            isRecognitionEnabled = isRecognitionEnabled,
+            onImageResult = {
+                selectUris += it
+                val flag = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                for (uri in selectUris) {
+                    uri?.let {
+                        context.contentResolver.takePersistableUriPermission(uri, flag)
+                    }
+                }
+            },
+            onVoiceResult = {
+                if (it.resultCode == RESULT_OK) {
+                    val data: Intent? = it.data
+                    val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    if (!results.isNullOrEmpty()) {
+                        recognizedText = " ${results[0]}"
+                        isRecognitionEnabled = false
+                    }
+                }
+            },
+            onResetClicked = {
+                recognizedText = ""
+                isRecognitionEnabled = true
+            }
+        )
     }
 }
 
@@ -224,7 +178,7 @@ private fun EditDoneIconButton(
 }
 
 @Composable
-fun EditPageBackIconButton(
+private fun EditPageBackIconButton(
     scope: CoroutineScope,
     foundNote: Note?,
     editNoteTitle: String,
@@ -255,4 +209,55 @@ fun EditPageBackIconButton(
                 context.startActivity(intent)
             }
     )
+}
+
+@Composable
+private fun EditNoteLayout(
+    editNoteTitle: String,
+    editNoteText: String,
+    isRecognitionEnabled: Boolean,
+    uriStringList: List<String?>?,
+    scope: CoroutineScope,
+    db: NoteAppDatabase,
+    selectUris: List<Uri?>,
+    recognizedText: String,
+    foundNote: Note?,
+    onTitleChange: (String) -> Unit,
+    onClicked: (Uri) -> Unit,
+    onScriptChange: (String) -> Unit
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            EditPageBackIconButton(
+                scope = scope,
+                foundNote = foundNote,
+                editNoteTitle = editNoteTitle,
+                editNoteText = editNoteText,
+                uriStringList = uriStringList,
+                db = db
+            )
+            NoteTitle(
+                noteTitle = editNoteTitle,
+                onChange = { onTitleChange(it) },
+                modifier = Modifier.weight(1f)
+            )
+            EditDoneIconButton(isRecognitionEnabled, scope, foundNote, editNoteTitle, editNoteText, uriStringList, db)
+        }
+        Divider()
+        ShowSelectedImage(
+            selectUris = selectUris,
+            onClickImage = { onClicked(it) }
+        )
+        NoteScript(
+            noteText = editNoteText,
+            recognizedText = recognizedText,
+            onChange = {
+                onScriptChange(it)
+            })
+    }
+
 }
