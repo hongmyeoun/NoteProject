@@ -232,7 +232,7 @@ private fun EditNoteLayout(
                 uriStringList = uriStringList,
                 db = db
             )
-            NoteTitle(
+            TopTextField(
                 noteTitle = editNoteTitle,
                 onChange = { onTitleChange(it) },
                 modifier = Modifier.weight(1f)

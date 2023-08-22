@@ -186,7 +186,7 @@ private fun NewNoteLayout(
             modifier = Modifier.fillMaxWidth()
         ) {
             BackIconButton()
-            NoteTitle(
+            TopTextField(
                 noteTitle = noteTitle,
                 onChange = { onTitleChange(it) },
                 modifier = Modifier.weight(1f)
@@ -257,7 +257,7 @@ fun NoteScript(noteText: String, recognizedText: String, onChange: (String) -> U
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteTitle(noteTitle: String, onChange: (String) -> Unit, modifier: Modifier) {
+fun TopTextField(noteTitle: String, onChange: (String) -> Unit, modifier: Modifier) {
     TextField(
         value = noteTitle,
         onValueChange = { onChange(it) },

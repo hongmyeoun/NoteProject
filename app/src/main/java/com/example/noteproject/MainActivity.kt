@@ -45,8 +45,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,11 +60,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,7 +87,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-
 class MainActivity : ComponentActivity() {
 
     @SuppressLint("WrongConstant")
@@ -107,6 +102,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             NoteProjectTheme {
+
                 val context = LocalContext.current
                 val db = remember { NoteAppDatabase.getDatabase(context) }
                 val noteList by db.noteDao().getAll().collectAsState(initial = emptyList())
@@ -117,7 +113,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = "main") {
                     composable("main") {
-                        NoteMainPage(noteList, navController, context, scope, db)
+                        NoteMainPage(noteList, navController, scope, db)
                     }
                     composable("search") {
                         NoteSearchPage(navController, noteList, context)
@@ -132,10 +128,10 @@ class MainActivity : ComponentActivity() {
 private fun NoteMainPage(
     noteList: List<Note>,
     navController: NavHostController,
-    context: Context,
     scope: CoroutineScope,
     db: NoteAppDatabase
 ) {
+    val context = LocalContext.current
     Box() {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -143,7 +139,7 @@ private fun NoteMainPage(
             modifier = Modifier.fillMaxWidth()
         ) {
             NoteTopLayout(noteList)
-            NoteBottomLayout(noteList, navController, context, scope, db)
+            NoteBottomLayout(noteList, navController, scope, db)
         }
         Box(
             modifier = Modifier
@@ -161,11 +157,11 @@ private fun NoteMainPage(
 private fun NoteBottomLayout(
     noteList: List<Note>,
     navController: NavHostController,
-    context: Context,
     scope: CoroutineScope,
     db: NoteAppDatabase
 ) {
-    val activity = LocalContext.current as? Activity
+    val context = LocalContext.current
+    val activity = context as? Activity
     val sharedPref =
         remember { activity?.getPreferences(Context.MODE_PRIVATE) }
     var upSort by remember {
@@ -173,9 +169,7 @@ private fun NoteBottomLayout(
         mutableStateOf(upSortValue)
     }
     var sortOption by remember {
-        val sortOptionValue =
-            sharedPref?.getString("sortOption", SortOption.TITLE.name)
-                ?: SortOption.TITLE.name
+        val sortOptionValue = sharedPref?.getString("sortOption", SortOption.TITLE.name) ?: SortOption.TITLE.name
         mutableStateOf(sortOptionValue)
     }
     LazyColumn(
@@ -209,6 +203,7 @@ private fun NoteBottomLayout(
                         navController.navigate("search")
                     })
                 Spacer(modifier = Modifier.size(9.dp))
+
                 Row(modifier = Modifier.clickable {
                     sortOption = when (sortOption) {
                         SortOption.TITLE.name -> SortOption.CREATED_DATE.name
@@ -216,6 +211,7 @@ private fun NoteBottomLayout(
                     }
                     titleAndTimeSortEdit(sharedPref, sortOption)
                 }) {
+
                     Icon(
                         painter = painterResource(id = R.drawable.sort),
                         contentDescription = "Sort by title or time"
@@ -295,7 +291,7 @@ private fun NoteItems(context: Context, note: Note, scope: CoroutineScope, db: N
             }
         }
         NoteBox(note, context)
-        NoteTitle(note)
+        TopTextField(note)
         NoteDate(note)
     }
 }
@@ -329,30 +325,7 @@ private fun NoteSearchPage(
                         .size(40.dp)
                         .clickable { navController.navigate("main") }
                 )
-                TextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    placeholder = {
-                        Text(
-                            text = "검색",
-                            fontStyle = FontStyle.Italic,
-                            fontSize = 25.sp,
-                            fontFamily = fontFamily()
-                        )
-                    },
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    textStyle = TextStyle(
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = fontFamily()
-                    )
-                )
+                TopTextField(noteTitle = searchText, onChange = { searchText = it }, modifier = Modifier.weight(1f))
                 val speechRecognizerLauncher =
                     rememberLauncherForActivityResult(
                         ActivityResultContracts.StartActivityForResult()
@@ -480,7 +453,9 @@ private fun NewNoteIconButton(context: Context) {
 @Composable
 private fun NoteBox(note: Note, context: Context) {
     Card(
-        modifier = Modifier.size(height = 170.dp, width = 110.dp).border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
+        modifier = Modifier
+            .size(height = 170.dp, width = 110.dp)
+            .border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -491,7 +466,9 @@ private fun NoteBox(note: Note, context: Context) {
 @Composable
 private fun SearchNoteBox(note: Note, context: Context, searchText: String) {
     Card(
-        modifier = Modifier.size(height = 170.dp, width = 110.dp).border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
+        modifier = Modifier
+            .size(height = 170.dp, width = 110.dp)
+            .border(0.6f.dp, Color.LightGray, RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -547,7 +524,7 @@ class DateUtils {
 }
 
 @Composable
-private fun NoteTitle(note: Note) {
+private fun TopTextField(note: Note) {
     Spacer(modifier = Modifier.height(2.dp))
     Text(
         text = "${note.title}",
@@ -686,7 +663,7 @@ private fun DeleteAlet(onDismiss: () -> Unit, onDelete: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "삭제하시겠습니까?")
+            Text(text = "삭제하시겠습니까?", color = Color.Red)
         },
         text = {
             Text(text = "진짜진짜 삭제됩니다ㅠㅠ 하실껀가요??")
